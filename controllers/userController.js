@@ -4,6 +4,44 @@ import Brand from '../models/Brand.js';
 import Agency from '../models/Agency.js';
 import Notification from '../models/Notification.js';
 
+export const getPublicInfluencers = async (req, res) => {
+  try {
+    const { category, search } = req.query;
+    let filter = { isVerified: true };
+
+    if (category) {
+      filter.categories = { $in: [category] };
+    }
+
+    let influencers = await Influencer.find(filter)
+      .populate('user', 'name email profileImage')
+      .sort({ profileCompletion: -1 });
+
+    if (search) {
+      const term = search.toLowerCase();
+      influencers = influencers.filter((inf) =>
+        inf.user?.name?.toLowerCase().includes(term)
+      );
+    }
+
+    const result = influencers.map((inf) => ({
+      _id: inf._id,
+      name: inf.user?.name || 'Unknown',
+      handle: inf.user?.email || '',
+      profileImage: inf.user?.profileImage || '',
+      location: inf.location || '',
+      categories: inf.categories || [],
+      socialAccounts: inf.socialAccounts || [],
+      totalEarnings: inf.totalEarnings || 0,
+      profileCompletion: inf.profileCompletion || 0,
+    }));
+
+    res.json(result);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
 export const getUserProfile = async (req, res) => {
   try {
     const user = await User.findById(req.user._id).select('-password');

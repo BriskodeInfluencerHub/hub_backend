@@ -38,7 +38,7 @@ const io = new Server(server, {
 app.set('socketio', io);
 
 // Security Middlewares
-app.use(helmet());
+app.use(helmet({ crossOriginResourcePolicy: { policy: 'cross-origin' } }));
 app.use(cors({ origin: '*' }));
 
 // Rate Limiting

@@ -48,6 +48,7 @@ export const registerUser = async (req, res) => {
     res.status(201).json({
       message: 'Registration initiated. OTP sent to your email/phone.',
       email: user.email,
+      otpCode: otpCode,
     });
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -93,7 +94,8 @@ export const verifyOtp = async (req, res) => {
         email: user.email,
         role: user.role,
         isVerified: user.isVerified,
-        status: user.status
+        status: user.status,
+        profileImage: user.profileImage
       }
     });
   } catch (error) {
@@ -139,7 +141,8 @@ export const loginUser = async (req, res) => {
         email: user.email,
         role: user.role,
         isVerified: user.isVerified,
-        status: user.status
+        status: user.status,
+        profileImage: user.profileImage
       }
     });
   } catch (error) {

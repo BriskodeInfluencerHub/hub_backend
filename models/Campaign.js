@@ -7,6 +7,7 @@ const campaignSchema = new mongoose.Schema({
   category: { type: String, required: true },
   budget: { type: Number, required: true },
   targetAudience: { type: String, default: '' },
+  location: { type: String, default: '' },
   requiredFollowers: { type: Number, default: 0 },
   requiredPlatforms: [{ type: String }],
   startDate: { type: Date, required: true },

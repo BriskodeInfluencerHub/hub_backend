@@ -1,5 +1,6 @@
 import express from 'express';
 import {
+  getPublicInfluencers,
   getUserProfile,
   updateUserProfile,
   uploadAvatar,
@@ -13,6 +14,7 @@ import { validate, profileUpdateSchema } from '../validators/schemas.js';
 
 const router = express.Router();
 
+router.get('/influencers', getPublicInfluencers);
 router.get('/profile', protect, getUserProfile);
 router.put('/profile', protect, validate(profileUpdateSchema), updateUserProfile);
 router.post('/upload-avatar', protect, upload.single('profileImage'), uploadAvatar);

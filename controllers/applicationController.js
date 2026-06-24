@@ -2,9 +2,10 @@ import Application from '../models/Application.js';
 import Campaign from '../models/Campaign.js';
 import Payment from '../models/Payment.js';
 import Notification from '../models/Notification.js';
+import Influencer from '../models/Influencer.js';
 
 export const applyToCampaign = async (req, res) => {
-  const { pitch, proposedRate } = req.body;
+  const { pitch, proposedRate, portfolio, socialStats } = req.body;
   const { campaignId } = req.params;
 
   try {
@@ -15,6 +16,16 @@ export const applyToCampaign = async (req, res) => {
 
     if (campaign.status !== 'active') {
       return res.status(400).json({ message: 'This campaign is not accepting applications' });
+    }
+
+    if (req.user.role === 'influencer') {
+      const influencer = await Influencer.findOne({ user: req.user._id });
+      if (!influencer) {
+        return res.status(400).json({ message: 'Influencer profile not found' });
+      }
+      if (!influencer.isVerified) {
+        return res.status(403).json({ message: 'Your profile must be verified by admin before applying to campaigns' });
+      }
     }
 
     const alreadyApplied = await Application.findOne({
@@ -31,6 +42,8 @@ export const applyToCampaign = async (req, res) => {
       influencer: req.user._id,
       pitch,
       proposedRate,
+      portfolio: portfolio || [],
+      socialStats: socialStats || [],
     });
 
     await Notification.create({
@@ -124,9 +137,13 @@ export const updateApplicationStatus = async (req, res) => {
       notifTitle = 'Application Approved!';
       notifMsg = `Congratulations! Your application for "${application.campaign.title}" was approved. Escrow payment of $${application.proposedRate} is held.`;
     } else if (status === 'rejected') {
+      notifType = 'app_rejected';
+      notifTitle = 'Application Rejected';
       notifMsg = `Unfortunately, your application for "${application.campaign.title}" was rejected.`;
     } else if (status === 'shortlisted') {
-      notifMsg = `Your application for "${application.campaign.title}" has been shortlisted.`;
+      notifType = 'app_shortlisted';
+      notifTitle = 'You\'ve Been Shortlisted!';
+      notifMsg = `Great news! Your application for "${application.campaign.title}" has been shortlisted. The brand will review your profile further.`;
     }
 
     await Notification.create({

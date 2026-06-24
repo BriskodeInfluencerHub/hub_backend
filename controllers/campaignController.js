@@ -2,7 +2,7 @@ import Campaign from '../models/Campaign.js';
 import User from '../models/User.js';
 
 export const createCampaign = async (req, res) => {
-  const { title, description, category, budget, targetAudience, requiredFollowers, requiredPlatforms, startDate, endDate, isDraft } = req.body;
+  const { title, description, category, budget, targetAudience, location, requiredFollowers, requiredPlatforms, startDate, endDate, isDraft } = req.body;
 
   try {
     const campaign = await Campaign.create({
@@ -12,6 +12,7 @@ export const createCampaign = async (req, res) => {
       category,
       budget,
       targetAudience,
+      location,
       requiredFollowers: requiredFollowers || 0,
       requiredPlatforms: requiredPlatforms || [],
       startDate: new Date(startDate),
@@ -111,7 +112,7 @@ export const updateCampaign = async (req, res) => {
 
     const fieldsToUpdate = [
       'title', 'description', 'category', 'budget',
-      'targetAudience', 'requiredFollowers', 'requiredPlatforms',
+      'targetAudience', 'location', 'requiredFollowers', 'requiredPlatforms',
       'startDate', 'endDate', 'status'
     ];
 
