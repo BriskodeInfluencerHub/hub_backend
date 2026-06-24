@@ -7,6 +7,7 @@ import {
   uploadFile,
   getUserNotifications,
   markNotificationsRead,
+  getPublicInfluencerProfile,
 } from '../controllers/userController.js';
 import { protect } from '../middleware/auth.js';
 import { upload } from '../middleware/upload.js';
@@ -15,6 +16,7 @@ import { validate, profileUpdateSchema } from '../validators/schemas.js';
 const router = express.Router();
 
 router.get('/influencers', getPublicInfluencers);
+router.get('/influencers/:id', getPublicInfluencerProfile);
 router.get('/profile', protect, getUserProfile);
 router.put('/profile', protect, validate(profileUpdateSchema), updateUserProfile);
 router.post('/upload-avatar', protect, upload.single('profileImage'), uploadAvatar);

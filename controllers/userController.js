@@ -77,7 +77,7 @@ export const updateUserProfile = async (req, res) => {
 
     if (req.body.name) user.name = req.body.name;
     if (req.body.phone) user.phone = req.body.phone;
-    if (req.body.profileImage) user.profileImage = req.body.profileImage;
+    if (req.body.profileImage !== undefined) user.profileImage = req.body.profileImage;
     await user.save();
 
     let roleData = null;
@@ -89,10 +89,14 @@ export const updateUserProfile = async (req, res) => {
         if (req.body.categories !== undefined) roleData.categories = req.body.categories;
         if (req.body.socialAccounts !== undefined) roleData.socialAccounts = req.body.socialAccounts;
         if (req.body.portfolio !== undefined) roleData.portfolio = req.body.portfolio;
+        if (req.body.tagline !== undefined) roleData.tagline = req.body.tagline;
+        if (req.body.pastBrands !== undefined) roleData.pastBrands = req.body.pastBrands;
+        if (req.body.featuredVideo !== undefined) roleData.featuredVideo = req.body.featuredVideo;
+        if (req.body.services !== undefined) roleData.services = req.body.services;
 
         let fields = 0;
         let filled = 0;
-        const checkFields = ['bio', 'location', 'categories', 'socialAccounts', 'portfolio'];
+        const checkFields = ['bio', 'location', 'categories', 'socialAccounts', 'portfolio', 'tagline', 'pastBrands', 'featuredVideo', 'services'];
         checkFields.forEach((field) => {
           fields++;
           if (roleData[field] && (Array.isArray(roleData[field]) ? roleData[field].length > 0 : !!roleData[field])) {
@@ -194,6 +198,52 @@ export const markNotificationsRead = async (req, res) => {
   try {
     await Notification.updateMany({ recipient: req.user._id, isRead: false }, { isRead: true });
     res.json({ message: 'All notifications marked as read' });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+export const getPublicInfluencerProfile = async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    // Check if the id matches a Mongoose ObjectId format
+    const isValidId = id.match(/^[0-9a-fA-F]{24}$/);
+    if (!isValidId) {
+      return res.status(400).json({ message: 'Invalid ID format' });
+    }
+
+    const influencer = await Influencer.findOne({
+      $or: [
+        { _id: id },
+        { user: id }
+      ]
+    }).populate('user', 'name email profileImage phone');
+
+    if (!influencer) {
+      return res.status(404).json({ message: 'Influencer not found' });
+    }
+
+    res.json({
+      _id: influencer._id,
+      user: {
+        _id: influencer.user?._id,
+        name: influencer.user?.name || 'Unknown',
+        email: influencer.user?.email || '',
+        profileImage: influencer.user?.profileImage || '',
+        phone: influencer.user?.phone || '',
+      },
+      location: influencer.location || '',
+      bio: influencer.bio || '',
+      categories: influencer.categories || [],
+      socialAccounts: influencer.socialAccounts || [],
+      portfolio: influencer.portfolio || [],
+      tagline: influencer.tagline || '',
+      pastBrands: influencer.pastBrands || '',
+      featuredVideo: influencer.featuredVideo || '',
+      services: influencer.services || [],
+      profileCompletion: influencer.profileCompletion || 0,
+    });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }

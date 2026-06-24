@@ -18,6 +18,14 @@ const influencerSchema = new mongoose.Schema({
     fileUrl: String,
     thumbnail: String
   }],
+  tagline: { type: String, default: '' },
+  pastBrands: { type: String, default: '' },
+  featuredVideo: { type: String, default: '' },
+  services: [{
+    title: String,
+    price: Number,
+    deliveryDays: Number
+  }],
   totalEarnings: { type: Number, default: 0 },
   profileCompletion: { type: Number, default: 0 },
   isVerified: { type: Boolean, default: false }

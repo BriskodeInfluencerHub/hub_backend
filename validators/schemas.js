@@ -21,6 +21,7 @@ export const otpVerifySchema = z.object({
 export const profileUpdateSchema = z.object({
   name: z.string().optional(),
   phone: z.string().optional(),
+  profileImage: z.string().optional().nullable(),
   bio: z.string().optional(),
   location: z.string().optional(),
   categories: z.array(z.string()).optional(),
@@ -39,6 +40,16 @@ export const profileUpdateSchema = z.object({
       description: z.string().optional(),
       fileUrl: z.string().optional(),
       thumbnail: z.string().optional(),
+    })
+  ).optional(),
+  tagline: z.string().optional(),
+  pastBrands: z.string().optional(),
+  featuredVideo: z.string().optional(),
+  services: z.array(
+    z.object({
+      title: z.string(),
+      price: z.number().nonnegative(),
+      deliveryDays: z.number().positive(),
     })
   ).optional(),
   companyName: z.string().optional(),
