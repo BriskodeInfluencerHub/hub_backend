@@ -26,6 +26,17 @@ const influencerSchema = new mongoose.Schema({
     price: Number,
     deliveryDays: Number
   }],
+  audienceGenderMale: { type: Number, default: 50 },
+  audienceGenderFemale: { type: Number, default: 50 },
+  audienceTopCountries: { type: String, default: '' },
+  audienceAgeRange: { type: String, default: '' },
+  contentFormats: { type: String, default: '' },
+  businessEmail: { type: String, default: '' },
+  businessPhone: { type: String, default: '' },
+  faqs: [{
+    question: String,
+    answer: String
+  }],
   totalEarnings: { type: Number, default: 0 },
   profileCompletion: { type: Number, default: 0 },
   isVerified: { type: Boolean, default: false }

@@ -52,6 +52,19 @@ export const profileUpdateSchema = z.object({
       deliveryDays: z.number().positive(),
     })
   ).optional(),
+  audienceGenderMale: z.number().min(0).max(100).optional(),
+  audienceGenderFemale: z.number().min(0).max(100).optional(),
+  audienceTopCountries: z.string().optional(),
+  audienceAgeRange: z.string().optional(),
+  contentFormats: z.string().optional(),
+  businessEmail: z.string().optional(),
+  businessPhone: z.string().optional(),
+  faqs: z.array(
+    z.object({
+      question: z.string(),
+      answer: z.string()
+    })
+  ).optional(),
   companyName: z.string().optional(),
   website: z.string().optional(),
   industry: z.string().optional(),

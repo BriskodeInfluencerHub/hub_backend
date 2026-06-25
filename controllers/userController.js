@@ -93,10 +93,18 @@ export const updateUserProfile = async (req, res) => {
         if (req.body.pastBrands !== undefined) roleData.pastBrands = req.body.pastBrands;
         if (req.body.featuredVideo !== undefined) roleData.featuredVideo = req.body.featuredVideo;
         if (req.body.services !== undefined) roleData.services = req.body.services;
+        if (req.body.audienceGenderMale !== undefined) roleData.audienceGenderMale = req.body.audienceGenderMale;
+        if (req.body.audienceGenderFemale !== undefined) roleData.audienceGenderFemale = req.body.audienceGenderFemale;
+        if (req.body.audienceTopCountries !== undefined) roleData.audienceTopCountries = req.body.audienceTopCountries;
+        if (req.body.audienceAgeRange !== undefined) roleData.audienceAgeRange = req.body.audienceAgeRange;
+        if (req.body.contentFormats !== undefined) roleData.contentFormats = req.body.contentFormats;
+        if (req.body.businessEmail !== undefined) roleData.businessEmail = req.body.businessEmail;
+        if (req.body.businessPhone !== undefined) roleData.businessPhone = req.body.businessPhone;
+        if (req.body.faqs !== undefined) roleData.faqs = req.body.faqs;
 
         let fields = 0;
         let filled = 0;
-        const checkFields = ['bio', 'location', 'categories', 'socialAccounts', 'portfolio', 'tagline', 'pastBrands', 'featuredVideo', 'services'];
+        const checkFields = ['bio', 'location', 'categories', 'socialAccounts', 'portfolio', 'tagline', 'pastBrands', 'featuredVideo', 'services', 'audienceTopCountries', 'audienceAgeRange', 'contentFormats', 'businessEmail', 'faqs'];
         checkFields.forEach((field) => {
           fields++;
           if (roleData[field] && (Array.isArray(roleData[field]) ? roleData[field].length > 0 : !!roleData[field])) {
@@ -242,6 +250,14 @@ export const getPublicInfluencerProfile = async (req, res) => {
       pastBrands: influencer.pastBrands || '',
       featuredVideo: influencer.featuredVideo || '',
       services: influencer.services || [],
+      audienceGenderMale: influencer.audienceGenderMale || 50,
+      audienceGenderFemale: influencer.audienceGenderFemale || 50,
+      audienceTopCountries: influencer.audienceTopCountries || '',
+      audienceAgeRange: influencer.audienceAgeRange || '',
+      contentFormats: influencer.contentFormats || '',
+      businessEmail: influencer.businessEmail || '',
+      businessPhone: influencer.businessPhone || '',
+      faqs: influencer.faqs || [],
       profileCompletion: influencer.profileCompletion || 0,
     });
   } catch (error) {
