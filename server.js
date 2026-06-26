@@ -47,7 +47,7 @@ const server = http.createServer(app);
 // Socket.io initialization
 const io = new Server(server, {
   cors: {
-    origin: '*',
+    origin: ['*', 'http://localhost:5173', 'https://briskodeinfluencerhub.netlify.app/'],
     methods: ['GET', 'POST'],
   },
 });
