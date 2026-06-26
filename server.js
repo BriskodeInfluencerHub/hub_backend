@@ -16,13 +16,30 @@ import campaignRoutes from './routes/campaignRoutes.js';
 import applicationRoutes from './routes/applicationRoutes.js';
 import chatRoutes from './routes/chatRoutes.js';
 import paymentRoutes from './routes/paymentRoutes.js';
+import reviewRoutes from './routes/reviewRoutes.js';
 import adminRoutes from './routes/adminRoutes.js';
+import Category from './models/Category.js';
 
 // Load env vars
 dotenv.config();
 
 // Connect to Database
 connectDB();
+
+const DEFAULT_CATEGORIES = ['Fashion', 'Tech', 'Food', 'Travel', 'Fitness'];
+
+const seedCategories = async () => {
+  try {
+    const count = await Category.countDocuments();
+    if (count === 0) {
+      await Category.insertMany(DEFAULT_CATEGORIES.map((name) => ({ name })));
+      console.log('Default categories seeded');
+    }
+  } catch (e) {
+    console.error('Category seed error:', e.message);
+  }
+};
+seedCategories();
 
 const app = express();
 const server = http.createServer(app);
@@ -71,6 +88,7 @@ app.use('/api/campaigns', campaignRoutes);
 app.use('/api/applications', applicationRoutes);
 app.use('/api/chats', chatRoutes);
 app.use('/api/payments', paymentRoutes);
+app.use('/api/reviews', reviewRoutes);
 app.use('/api/admin', adminRoutes);
 
 // Socket connection logic

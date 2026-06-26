@@ -14,7 +14,7 @@ const campaignSchema = new mongoose.Schema({
   endDate: { type: Date, required: true },
   status: { 
     type: String, 
-    enum: ['draft', 'pending_approval', 'active', 'in_progress', 'completed', 'cancelled'], 
+    enum: ['draft', 'pending_approval', 'active', 'in_progress', 'completed', 'cancelled', 'rejected'], 
     default: 'pending_approval' 
   }
 }, { timestamps: true });

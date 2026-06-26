@@ -1,6 +1,7 @@
 import Wallet from '../models/Wallet.js';
 import Transaction from '../models/Transaction.js';
 import Payment from '../models/Payment.js';
+import Campaign from '../models/Campaign.js';
 import Influencer from '../models/Influencer.js';
 import Notification from '../models/Notification.js';
 
@@ -78,6 +79,12 @@ export const releaseEscrow = async (req, res) => {
 
     payment.escrowStatus = 'released';
     await payment.save();
+
+    const campaignDoc = await Campaign.findById(payment.campaign._id);
+    if (campaignDoc) {
+      campaignDoc.status = 'completed';
+      await campaignDoc.save();
+    }
 
     const influencerWallet = await Wallet.findOne({ user: payment.influencer });
     if (influencerWallet) {

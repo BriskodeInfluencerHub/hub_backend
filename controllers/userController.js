@@ -6,11 +6,15 @@ import Notification from '../models/Notification.js';
 
 export const getPublicInfluencers = async (req, res) => {
   try {
-    const { category, search } = req.query;
+    const { category, search, location, minFollowers, minEngagement } = req.query;
     let filter = { isVerified: true };
 
     if (category) {
       filter.categories = { $in: [category] };
+    }
+
+    if (location) {
+      filter.location = { $regex: location, $options: 'i' };
     }
 
     let influencers = await Influencer.find(filter)
@@ -24,8 +28,27 @@ export const getPublicInfluencers = async (req, res) => {
       );
     }
 
+    if (minFollowers) {
+      const min = parseInt(minFollowers, 10);
+      if (!isNaN(min)) {
+        influencers = influencers.filter((inf) =>
+          (inf.socialAccounts || []).some((acct) => (acct.followers || 0) >= min)
+        );
+      }
+    }
+
+    if (minEngagement) {
+      const min = parseFloat(minEngagement);
+      if (!isNaN(min)) {
+        influencers = influencers.filter((inf) =>
+          (inf.socialAccounts || []).some((acct) => (acct.engagementRate || 0) >= min)
+        );
+      }
+    }
+
     const result = influencers.map((inf) => ({
       _id: inf._id,
+      userId: inf.user?._id || '',
       name: inf.user?.name || 'Unknown',
       handle: inf.user?.email || '',
       profileImage: inf.user?.profileImage || '',
@@ -34,6 +57,8 @@ export const getPublicInfluencers = async (req, res) => {
       socialAccounts: inf.socialAccounts || [],
       totalEarnings: inf.totalEarnings || 0,
       profileCompletion: inf.profileCompletion || 0,
+      averageRating: inf.averageRating || 0,
+      reviewCount: inf.reviewCount || 0,
     }));
 
     res.json(result);
@@ -259,6 +284,8 @@ export const getPublicInfluencerProfile = async (req, res) => {
       businessPhone: influencer.businessPhone || '',
       faqs: influencer.faqs || [],
       profileCompletion: influencer.profileCompletion || 0,
+      averageRating: influencer.averageRating || 0,
+      reviewCount: influencer.reviewCount || 0,
     });
   } catch (error) {
     res.status(500).json({ message: error.message });

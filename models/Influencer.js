@@ -39,7 +39,9 @@ const influencerSchema = new mongoose.Schema({
   }],
   totalEarnings: { type: Number, default: 0 },
   profileCompletion: { type: Number, default: 0 },
-  isVerified: { type: Boolean, default: false }
+  isVerified: { type: Boolean, default: false },
+  averageRating: { type: Number, default: 0 },
+  reviewCount: { type: Number, default: 0 }
 }, { timestamps: true });
 
 const Influencer = mongoose.model('Influencer', influencerSchema);

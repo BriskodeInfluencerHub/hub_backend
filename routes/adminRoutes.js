@@ -7,6 +7,11 @@ import {
   getAdminCampaigns,
   approveCampaign,
 } from '../controllers/adminController.js';
+import {
+  getCategories,
+  createCategory,
+  deleteCategory,
+} from '../controllers/categoryController.js';
 import { protect, authorize } from '../middleware/auth.js';
 
 const router = express.Router();
@@ -19,5 +24,8 @@ router.get('/users/:userId/profile', getUserProfileDetail);
 router.patch('/users/:userId/status', updateUserStatus);
 router.get('/campaigns', getAdminCampaigns);
 router.patch('/campaigns/:id/approve', approveCampaign);
+router.get('/categories', getCategories);
+router.post('/categories', createCategory);
+router.delete('/categories/:id', deleteCategory);
 
 export default router;

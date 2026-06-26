@@ -13,6 +13,7 @@ export const getAdminAnalytics = async (req, res) => {
     const totalBrands = await User.countDocuments({ role: 'brand' });
     const totalAgencies = await User.countDocuments({ role: 'agency' });
     const totalCampaigns = await Campaign.countDocuments();
+    const activeCampaigns = await Campaign.countDocuments({ status: 'active' });
 
     const paymentSums = await Payment.aggregate([
       { $group: { _id: null, total: { $sum: '$amount' } } }
@@ -35,6 +36,7 @@ export const getAdminAnalytics = async (req, res) => {
         totalBrands,
         totalAgencies,
         totalCampaigns,
+        activeCampaigns,
         platformVolume,
       },
       signupsOverview,
@@ -161,7 +163,7 @@ export const getAdminCampaigns = async (req, res) => {
 };
 
 export const approveCampaign = async (req, res) => {
-  const { approve } = req.body;
+  const { approve, spam } = req.body;
 
   try {
     const campaign = await Campaign.findById(req.params.id).populate('brand', 'name email');
@@ -169,22 +171,28 @@ export const approveCampaign = async (req, res) => {
       return res.status(404).json({ message: 'Campaign not found' });
     }
 
-    campaign.status = approve ? 'active' : 'cancelled';
+    if (spam) {
+      campaign.status = 'rejected';
+    } else {
+      campaign.status = approve ? 'active' : 'cancelled';
+    }
     await campaign.save();
 
     await Notification.create({
       recipient: campaign.brand._id,
       sender: req.user._id,
       type: 'campaign_invite',
-      title: approve ? 'Campaign Approved!' : 'Campaign Rejected',
-      message: approve
-        ? `Your campaign "${campaign.title}" has been approved and is now live for influencer applications.`
-        : `Your campaign "${campaign.title}" was not approved by the admin.`,
+      title: spam ? 'Campaign Marked as Spam' : (approve ? 'Campaign Approved!' : 'Campaign Rejected'),
+      message: spam
+        ? `Your campaign "${campaign.title}" was flagged as spam and has been rejected.`
+        : (approve
+          ? `Your campaign "${campaign.title}" has been approved and is now live for influencer applications.`
+          : `Your campaign "${campaign.title}" was not approved by the admin.`),
       data: { campaignId: campaign._id },
     });
 
     res.json({
-      message: approve ? 'Campaign approved and published!' : 'Campaign rejected/cancelled',
+      message: spam ? 'Campaign rejected as spam' : (approve ? 'Campaign approved and published!' : 'Campaign rejected/cancelled'),
       campaign,
     });
   } catch (error) {

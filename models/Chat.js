@@ -2,6 +2,7 @@ import mongoose from 'mongoose';
 
 const chatSchema = new mongoose.Schema({
   participants: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
+  campaign: { type: mongoose.Schema.Types.ObjectId, ref: 'Campaign' },
   lastMessage: { type: mongoose.Schema.Types.ObjectId, ref: 'Message' }
 }, { timestamps: true });
 

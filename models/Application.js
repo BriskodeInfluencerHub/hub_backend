@@ -18,10 +18,15 @@ const applicationSchema = new mongoose.Schema({
     engagementRate: Number,
     link: String
   }],
-  deliverablesUrl: { type: String, default: '' },
+  deliverables: {
+    instagramPost: { type: String, default: '' },
+    youtubeVideo: { type: String, default: '' },
+    reelLink: { type: String, default: '' },
+    screenshot: { type: String, default: '' },
+  },
   status: { 
     type: String, 
-    enum: ['applied', 'under_review', 'shortlisted', 'approved', 'rejected', 'completed'], 
+    enum: ['applied', 'under_review', 'shortlisted', 'approved', 'rejected', 'completed', 'delivered'], 
     default: 'applied' 
   }
 }, { timestamps: true });

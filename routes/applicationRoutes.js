@@ -5,6 +5,7 @@ import {
   getMyApplications,
   updateApplicationStatus,
   submitDeliverables,
+  approveDeliverables,
 } from '../controllers/applicationController.js';
 import { protect, authorize } from '../middleware/auth.js';
 import { validate, applicationSchema } from '../validators/schemas.js';
@@ -16,5 +17,6 @@ router.post('/campaign/:campaignId/apply', protect, authorize('influencer', 'age
 router.get('/campaign/:campaignId/applications', protect, getCampaignApplications);
 router.patch('/:id/status', protect, updateApplicationStatus);
 router.patch('/:id/submit-deliverables', protect, authorize('influencer'), submitDeliverables);
+router.patch('/:id/approve-deliverables', protect, authorize('brand', 'admin'), approveDeliverables);
 
 export default router;

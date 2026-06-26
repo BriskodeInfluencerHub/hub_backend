@@ -1,6 +1,8 @@
 import Chat from '../models/Chat.js';
 import Message from '../models/Message.js';
 import User from '../models/User.js';
+import Campaign from '../models/Campaign.js';
+import Notification from '../models/Notification.js';
 
 export const getChats = async (req, res) => {
   try {
@@ -8,6 +10,7 @@ export const getChats = async (req, res) => {
       participants: { $in: [req.user._id] },
     })
       .populate('participants', 'name email role profileImage')
+      .populate('campaign', 'title')
       .populate({
         path: 'lastMessage',
         populate: { path: 'sender', select: 'name profileImage' }
@@ -21,7 +24,7 @@ export const getChats = async (req, res) => {
 };
 
 export const createChat = async (req, res) => {
-  const { participantId } = req.body;
+  const { participantId, campaignId, text } = req.body;
 
   if (!participantId) {
     return res.status(400).json({ message: 'Participant ID is required' });
@@ -33,16 +36,64 @@ export const createChat = async (req, res) => {
       return res.status(404).json({ message: 'Participant user not found' });
     }
 
-    let chat = await Chat.findOne({
+    let chatQuery = {
       participants: { $all: [req.user._id, participantId] },
-    }).populate('participants', 'name email role profileImage');
+    };
+    if (campaignId) {
+      chatQuery.campaign = campaignId;
+    }
+
+    let chat = await Chat.findOne(chatQuery)
+      .populate('participants', 'name email role profileImage')
+      .populate('campaign', 'title');
 
     if (!chat) {
-      chat = await Chat.create({
+      const chatData = {
         participants: [req.user._id, participantId],
-      });
+      };
+      if (campaignId) {
+        const campaign = await Campaign.findById(campaignId);
+        if (campaign) {
+          chatData.campaign = campaignId;
+        }
+      }
+
+      chat = await Chat.create(chatData);
       chat = await chat.populate('participants', 'name email role profileImage');
+      if (chat.campaign) {
+        chat = await chat.populate('campaign', 'title');
+      }
     }
+
+    if (text && text.trim()) {
+      const message = await Message.create({
+        chat: chat._id,
+        sender: req.user._id,
+        text,
+        readBy: [req.user._id],
+      });
+
+      chat.lastMessage = message._id;
+      await chat.save();
+
+      const populatedMessage = await message.populate('sender', 'name profileImage');
+
+      const io = req.app.get('socketio');
+      if (io) {
+        io.to(chat._id.toString()).emit('message_received', populatedMessage);
+      }
+    }
+
+    await Notification.create({
+      recipient: participantId,
+      sender: req.user._id,
+      type: 'new_message',
+      title: 'New Message',
+      message: text
+        ? `${req.user.name} sent you a message${campaignId ? ' regarding a campaign' : ''}`
+        : `${req.user.name} wants to connect with you`,
+      data: { chatId: chat._id, campaignId: campaignId || null },
+    });
 
     res.status(201).json(chat);
   } catch (error) {
