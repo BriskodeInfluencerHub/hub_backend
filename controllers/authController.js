@@ -113,7 +113,7 @@ export const loginUser = async (req, res) => {
       return res.status(401).json({ message: 'Invalid email or password' });
     }
 
-    if (!user.isVerified) {
+    if (!user.isVerified && user.role !== 'coordinator') {
       return res.status(403).json({ message: 'Account not verified. Please verify OTP first.' });
     }
 

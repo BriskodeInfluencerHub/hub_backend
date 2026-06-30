@@ -18,6 +18,8 @@ import chatRoutes from './routes/chatRoutes.js';
 import paymentRoutes from './routes/paymentRoutes.js';
 import reviewRoutes from './routes/reviewRoutes.js';
 import adminRoutes from './routes/adminRoutes.js';
+import campaignRequestRoutes from './routes/campaignRequestRoutes.js';
+import coordinatorRoutes from './routes/coordinatorRoutes.js';
 import Category from './models/Category.js';
 
 // Load env vars
@@ -78,7 +80,7 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // Basic Root Route
 app.get('/', (req, res) => {
-  res.send('BRISKODE Influencer Hub API is running...');
+  res.send('Odisha Influencer Market API is running...');
 });
 
 // API Routes
@@ -90,6 +92,8 @@ app.use('/api/chats', chatRoutes);
 app.use('/api/payments', paymentRoutes);
 app.use('/api/reviews', reviewRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/campaign-requests', campaignRequestRoutes);
+app.use('/api/coordinator', coordinatorRoutes);
 
 // Socket connection logic
 io.on('connection', (socket) => {

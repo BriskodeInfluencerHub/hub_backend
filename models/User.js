@@ -6,7 +6,7 @@ const userSchema = new mongoose.Schema({
   email: { type: String, required: true, unique: true, lowercase: true, trim: true },
   phone: { type: String, required: true, unique: true, trim: true },
   password: { type: String, required: true },
-  role: { type: String, enum: ['influencer', 'brand', 'agency', 'admin'], required: true },
+  role: { type: String, enum: ['influencer', 'brand', 'agency', 'admin', 'coordinator'], required: true },
   status: { type: String, enum: ['pending', 'active', 'suspended'], default: 'pending' },
   profileImage: { type: String, default: '' },
   isVerified: { type: Boolean, default: false },

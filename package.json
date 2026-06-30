@@ -1,7 +1,7 @@
 {
-  "name": "briskode-influencer-hub-backend",
+  "name": "odisha-influencer-market-backend",
   "version": "1.0.0",
-  "description": "BRISKODE Influencer Hub MERN Backend",
+  "description": "Odisha Influencer Market MERN Backend",
   "main": "server.js",
   "type": "module",
   "scripts": {
