@@ -117,6 +117,10 @@ export const updateUserProfile = async (req, res) => {
         if (req.body.tagline !== undefined) roleData.tagline = req.body.tagline;
         if (req.body.pastBrands !== undefined) roleData.pastBrands = req.body.pastBrands;
         if (req.body.featuredVideo !== undefined) roleData.featuredVideo = req.body.featuredVideo;
+        if (req.body.featuredVideo2 !== undefined) roleData.featuredVideo2 = req.body.featuredVideo2;
+        if (req.body.featuredVideo3 !== undefined) roleData.featuredVideo3 = req.body.featuredVideo3;
+        if (req.body.videoLayout !== undefined) roleData.videoLayout = req.body.videoLayout;
+        if (req.body.photos !== undefined) roleData.photos = req.body.photos;
         if (req.body.services !== undefined) roleData.services = req.body.services;
         if (req.body.audienceGenderMale !== undefined) roleData.audienceGenderMale = req.body.audienceGenderMale;
         if (req.body.audienceGenderFemale !== undefined) roleData.audienceGenderFemale = req.body.audienceGenderFemale;
@@ -274,6 +278,10 @@ export const getPublicInfluencerProfile = async (req, res) => {
       tagline: influencer.tagline || '',
       pastBrands: influencer.pastBrands || '',
       featuredVideo: influencer.featuredVideo || '',
+      featuredVideo2: influencer.featuredVideo2 || '',
+      featuredVideo3: influencer.featuredVideo3 || '',
+      videoLayout: influencer.videoLayout || '1p_2l',
+      photos: influencer.photos || [],
       services: influencer.services || [],
       audienceGenderMale: influencer.audienceGenderMale || 50,
       audienceGenderFemale: influencer.audienceGenderFemale || 50,

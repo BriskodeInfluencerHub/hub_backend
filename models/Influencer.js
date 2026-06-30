@@ -21,6 +21,10 @@ const influencerSchema = new mongoose.Schema({
   tagline: { type: String, default: '' },
   pastBrands: { type: String, default: '' },
   featuredVideo: { type: String, default: '' },
+  featuredVideo2: { type: String, default: '' },
+  featuredVideo3: { type: String, default: '' },
+  videoLayout: { type: String, enum: ['2p_1l', '1p_2l'], default: '1p_2l' },
+  photos: { type: [String], default: [] },
   services: [{
     title: String,
     price: Number,

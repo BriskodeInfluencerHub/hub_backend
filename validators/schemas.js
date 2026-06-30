@@ -45,6 +45,10 @@ export const profileUpdateSchema = z.object({
   tagline: z.string().optional(),
   pastBrands: z.string().optional(),
   featuredVideo: z.string().optional(),
+  featuredVideo2: z.string().optional(),
+  featuredVideo3: z.string().optional(),
+  videoLayout: z.string().optional(),
+  photos: z.array(z.string()).max(3).optional(),
   services: z.array(
     z.object({
       title: z.string(),
