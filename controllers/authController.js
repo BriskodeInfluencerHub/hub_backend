@@ -36,7 +36,7 @@ export const registerUser = async (req, res) => {
     });
 
     if (role === 'influencer') {
-      await Influencer.create({ user: user._id, location: 'Not Specified' });
+      await Influencer.create({ user: user._id, location: 'Bhubaneswar, Odisha, India' });
     } else if (role === 'brand') {
       await Brand.create({ user: user._id, companyName: `${name} Brand` });
     } else if (role === 'agency') {
