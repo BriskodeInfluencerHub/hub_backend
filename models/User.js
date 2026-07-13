@@ -14,10 +14,12 @@ const userSchema = new mongoose.Schema({
     code: String,
     expiresAt: Date
   },
-  refreshToken: String
+  refreshToken: String,
+  resetPasswordToken: String,
+  resetPasswordExpires: Date
 }, { timestamps: true });
 
-userSchema.pre('save', async function(next) {
+userSchema.pre('save', async function (next) {
   if (!this.isModified('password')) return next();
   try {
     const salt = await bcrypt.genSalt(10);
@@ -28,7 +30,7 @@ userSchema.pre('save', async function(next) {
   }
 });
 
-userSchema.methods.matchPassword = async function(enteredPassword) {
+userSchema.methods.matchPassword = async function (enteredPassword) {
   return await bcrypt.compare(enteredPassword, this.password);
 };
 

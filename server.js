@@ -49,7 +49,7 @@ const server = http.createServer(app);
 // Socket.io initialization
 const io = new Server(server, {
   cors: {
-    origin: ['*', 'http://localhost:5173', 'https://briskodeinfluencerhub.netlify.app/'],
+    origin: ['*', 'http://localhost:5173', 'http://localhost:5174', 'https://briskodeinfluencerhub.netlify.app/'],
     methods: ['GET', 'POST'],
   },
 });
@@ -117,7 +117,7 @@ io.on('connection', (socket) => {
 app.use(notFound);
 app.use(errorHandler);
 
-const PORT = process.env.PORT || 5001;
+const PORT = process.env.PORT || 5002;
 server.listen(PORT, () => {
   console.log(`Server running in ${process.env.NODE_ENV} mode on port ${PORT}`);
 });
