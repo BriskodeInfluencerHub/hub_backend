@@ -199,3 +199,41 @@ export const approveCampaign = async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 };
+
+export const resetUserPassword = async (req, res) => {
+  const { userId } = req.params;
+  const { newPassword } = req.body;
+  try {
+    const user = await User.findById(userId);
+    if (!user) return res.status(404).json({ message: 'User not found' });
+    const tempPassword = newPassword || 'Reset@1234';
+    // Set plain-text password — the User model's pre-save hook will hash it automatically
+    user.password = tempPassword;
+    await user.save();
+    await Notification.create({
+      recipient: userId,
+      sender: req.user._id,
+      type: 'profile_verified',
+      title: 'Password Reset by Admin',
+      message: `Your password has been reset by an administrator. Your new temporary password is: ${tempPassword}. Please change it after logging in.`,
+    });
+    res.json({ message: `Password reset successfully. Temporary password: ${tempPassword}` });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+export const deleteUser = async (req, res) => {
+  const { userId } = req.params;
+  try {
+    const user = await User.findById(userId);
+    if (!user) return res.status(404).json({ message: 'User not found' });
+    if (user.role === 'influencer') await Influencer.deleteOne({ user: userId });
+    if (user.role === 'brand') await Brand.deleteOne({ user: userId });
+    if (user.role === 'agency') await Agency.deleteOne({ user: userId });
+    await User.findByIdAndDelete(userId);
+    res.json({ message: 'User and associated profile deleted successfully' });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};

@@ -6,6 +6,8 @@ import {
   updateUserStatus,
   getAdminCampaigns,
   approveCampaign,
+  resetUserPassword,
+  deleteUser,
 } from '../controllers/adminController.js';
 import {
   getCategories,
@@ -34,6 +36,8 @@ router.get('/analytics', getAdminAnalytics);
 router.get('/users', getAdminUsers);
 router.get('/users/:userId/profile', getUserProfileDetail);
 router.patch('/users/:userId/status', updateUserStatus);
+router.post('/users/:userId/reset-password', resetUserPassword);
+router.delete('/users/:userId', deleteUser);
 router.get('/campaigns', getAdminCampaigns);
 router.patch('/campaigns/:id/approve', approveCampaign);
 router.get('/categories', getCategories);
