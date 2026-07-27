@@ -5,7 +5,9 @@ const transactionSchema = new mongoose.Schema({
   amount: { type: Number, required: true },
   type: { type: String, enum: ['credit', 'debit'], required: true },
   description: { type: String, default: '' },
-  status: { type: String, enum: ['pending', 'completed', 'failed'], default: 'completed' }
+  status: { type: String, enum: ['pending', 'completed', 'failed'], default: 'completed' },
+  source: { type: String, enum: ['referral', 'campaign', 'withdrawal', 'other'], default: 'other' },
+  referralId: { type: mongoose.Schema.Types.ObjectId, ref: 'Referral', default: null },
 }, { timestamps: true });
 
 const Transaction = mongoose.model('Transaction', transactionSchema);

@@ -1,5 +1,6 @@
 import Campaign from '../models/Campaign.js';
 import User from '../models/User.js';
+import { checkAndRewardReferral } from './referralController.js';
 
 export const createCampaign = async (req, res) => {
   const { title, description, category, budget, targetAudience, location, requiredFollowers, requiredPlatforms, startDate, endDate, isDraft } = req.body;
@@ -24,6 +25,9 @@ export const createCampaign = async (req, res) => {
       message: isDraft ? 'Campaign saved as draft' : 'Campaign created successfully, awaiting admin approval',
       campaign,
     });
+
+    // Trigger referral eligibility check for brand after first campaign is created
+    checkAndRewardReferral(req.user._id).catch(console.error);
   } catch (error) {
     res.status(500).json({ message: error.message });
   }

@@ -4,12 +4,15 @@ import Influencer from '../models/Influencer.js';
 import Brand from '../models/Brand.js';
 import Agency from '../models/Agency.js';
 import Wallet from '../models/Wallet.js';
+import Referral from '../models/Referral.js';
+import Notification from '../models/Notification.js';
+import { generateReferralCode, checkAndRewardReferral } from './referralController.js';
 import { generateAccessToken, generateRefreshToken } from '../utils/generateToken.js';
 import jwt from 'jsonwebtoken';
 import sendEmail from '../utils/sendEmail.js';
 
 export const registerUser = async (req, res) => {
-  const { name, email, phone, password, role } = req.body;
+  const { name, email, phone, password, role, referralCode } = req.body;
 
   try {
     const emailExists = await User.findOne({ email });
@@ -19,8 +22,23 @@ export const registerUser = async (req, res) => {
       return res.status(400).json({ message: 'User with this email or phone already exists' });
     }
 
+    // Validate referral code if provided
+    let referrer = null;
+    const cleanRefCode = (referralCode && referralCode !== 'undefined' && referralCode !== 'null') ? referralCode.trim().toUpperCase() : null;
+    console.log(`\n[REFERRAL DEBUG] raw referralCode: "${referralCode}" | cleaned: "${cleanRefCode}"`);
+    if (cleanRefCode) {
+      referrer = await User.findOne({ referralCode: cleanRefCode });
+      console.log(`[REFERRAL DEBUG] Referrer found: ${referrer ? referrer.email : 'NOT FOUND'}`);
+      if (!referrer) {
+        return res.status(400).json({ message: 'Invalid referral code' });
+      }
+    }
+
     const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
     const otpExpires = new Date(Date.now() + 10 * 60 * 1000); // 10 mins
+
+    // Generate a unique referral code for the new user
+    const newUserReferralCode = await generateReferralCode();
 
     const user = await User.create({
       name,
@@ -29,11 +47,19 @@ export const registerUser = async (req, res) => {
       password,
       role,
       status: 'pending',
+      referralCode: newUserReferralCode,
+      referredBy: referrer ? referrer._id : null,
       otp: {
         code: otpCode,
         expiresAt: otpExpires
       }
     });
+
+    // Self-referral guard
+    if (referrer && referrer._id.toString() === user._id.toString()) {
+      await User.findByIdAndUpdate(user._id, { referredBy: null });
+      referrer = null;
+    }
 
     if (role === 'influencer') {
       await Influencer.create({ user: user._id, location: 'Bhubaneswar, Odisha, India' });
@@ -44,6 +70,28 @@ export const registerUser = async (req, res) => {
     }
 
     await Wallet.create({ user: user._id, balance: 0 });
+
+    // Create referral record and notify referrer
+    if (referrer) {
+      const referralDoc = await Referral.create({
+        referrer: referrer._id,
+        referredUser: user._id,
+        referralCode: referrer.referralCode,
+        rewardAmount: 150,
+        status: 'registered',
+      });
+      console.log(`[REFERRAL DEBUG] ✅ Referral document created: ${referralDoc._id} | referrer: ${referrer.email} → referred: ${user.email}`);
+
+      await Notification.create({
+        recipient: referrer._id,
+        type: 'referral_joined',
+        title: '🎉 Someone joined using your referral!',
+        message: `${name} just registered using your referral link. You'll earn ₹150 once they complete their profile.`,
+        data: { referredUserId: user._id },
+      });
+    } else {
+      console.log(`[REFERRAL DEBUG] ⚠️  No referrer — registration without referral code`);
+    }
 
     console.log(`\n====================================\n[OTP NOTIFICATION] To: ${email}\nYour OTP Verification Code is: ${otpCode}\nValid for 10 minutes.\n====================================\n`);
 
@@ -85,6 +133,18 @@ export const verifyOtp = async (req, res) => {
 
     user.refreshToken = refreshToken;
     await user.save();
+
+    // Advance referral status from 'registered' → 'verified'
+    if (user.referredBy) {
+      await Referral.findOneAndUpdate(
+        { referredUser: user._id, status: 'registered' },
+        { status: 'verified' }
+      );
+      // For coordinators, check eligibility immediately since they have no extra requirements
+      if (user.role === 'coordinator') {
+        checkAndRewardReferral(user._id).catch(console.error);
+      }
+    }
 
     res.status(200).json({
       message: 'OTP verified successfully. Account activated.',

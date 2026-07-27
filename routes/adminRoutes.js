@@ -27,6 +27,7 @@ import {
   deleteCoordinator,
 } from '../controllers/coordinatorController.js';
 import { protect, authorize } from '../middleware/auth.js';
+import { getAdminReferrals, releaseReferralReward } from '../controllers/referralController.js';
 
 const router = express.Router();
 
@@ -53,5 +54,9 @@ router.get('/coordinators', getCoordinators);
 router.get('/coordinators/:id', getCoordinatorById);
 router.patch('/coordinators/:id', updateCoordinator);
 router.delete('/coordinators/:id', deleteCoordinator);
+
+// Referral Management
+router.get('/referrals', getAdminReferrals);
+router.post('/referrals/reward/:userId', releaseReferralReward);
 
 export default router;

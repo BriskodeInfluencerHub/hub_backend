@@ -2,6 +2,7 @@ import User from '../../models/User.js';
 import Influencer from '../../models/Influencer.js';
 import Brand from '../../models/Brand.js';
 import Agency from '../../models/Agency.js';
+import { checkAndRewardReferral } from '../referralController.js';
 
 export const getUserProfile = async (req, res) => {
   try {
@@ -79,6 +80,9 @@ export const updateUserProfile = async (req, res) => {
         roleData.profileCompletion = Math.round((filled / fields) * 100);
 
         await roleData.save();
+
+        // Trigger referral eligibility check for influencers after profile update
+        checkAndRewardReferral(user._id).catch(console.error);
       }
     } else if (user.role === 'brand') {
       roleData = await Brand.findOne({ user: user._id });
@@ -93,6 +97,9 @@ export const updateUserProfile = async (req, res) => {
           roleData.kycStatus = 'pending';
         }
         await roleData.save();
+
+        // Trigger referral eligibility check for brands after profile update
+        checkAndRewardReferral(user._id).catch(console.error);
       }
     } else if (user.role === 'agency') {
       roleData = await Agency.findOne({ user: user._id });
@@ -103,6 +110,9 @@ export const updateUserProfile = async (req, res) => {
         if (req.body.revenueShare !== undefined) roleData.revenueShare = req.body.revenueShare;
         if (req.body.managedInfluencers !== undefined) roleData.managedInfluencers = req.body.managedInfluencers;
         await roleData.save();
+
+        // Trigger referral eligibility check for agencies after profile update
+        checkAndRewardReferral(user._id).catch(console.error);
       }
     }
 

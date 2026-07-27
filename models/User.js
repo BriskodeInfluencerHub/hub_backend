@@ -16,7 +16,12 @@ const userSchema = new mongoose.Schema({
   },
   refreshToken: String,
   resetPasswordToken: String,
-  resetPasswordExpires: Date
+  resetPasswordExpires: Date,
+  // Referral System Fields
+  referralCode: { type: String, unique: true, sparse: true },
+  referredBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
+  totalReferrals: { type: Number, default: 0 },
+  referralEarnings: { type: Number, default: 0 },
 }, { timestamps: true });
 
 userSchema.pre('save', async function (next) {
