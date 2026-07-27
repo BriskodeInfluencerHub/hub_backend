@@ -6,6 +6,7 @@ export const registerSchema = z.object({
   phone: z.string().min(10, 'Phone must be at least 10 digits'),
   password: z.string().min(6, 'Password must be at least 6 characters'),
   role: z.enum(['influencer', 'brand', 'agency']),
+  referralCode: z.string().optional(),   // ← FIX: allow referralCode through validation
 });
 
 export const loginSchema = z.object({

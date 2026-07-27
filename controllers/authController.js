@@ -12,7 +12,9 @@ import jwt from 'jsonwebtoken';
 import sendEmail from '../utils/sendEmail.js';
 
 export const registerUser = async (req, res) => {
+  console.log("\n[REFERRAL DEBUG 11 & 12] Backend req.body:", req.body);
   const { name, email, phone, password, role, referralCode } = req.body;
+  console.log("[REFERRAL DEBUG 11 & 12] Backend referralCode received:", referralCode);
 
   try {
     const emailExists = await User.findOne({ email });
@@ -25,7 +27,7 @@ export const registerUser = async (req, res) => {
     // Validate referral code if provided
     let referrer = null;
     const cleanRefCode = (referralCode && referralCode !== 'undefined' && referralCode !== 'null') ? referralCode.trim().toUpperCase() : null;
-    console.log(`\n[REFERRAL DEBUG] raw referralCode: "${referralCode}" | cleaned: "${cleanRefCode}"`);
+    console.log(`[REFERRAL DEBUG] raw referralCode: "${referralCode}" | cleaned: "${cleanRefCode}"`);
     if (cleanRefCode) {
       referrer = await User.findOne({ referralCode: cleanRefCode });
       console.log(`[REFERRAL DEBUG] Referrer found: ${referrer ? referrer.email : 'NOT FOUND'}`);
@@ -308,7 +310,7 @@ export const forgotPassword = async (req, res) => {
         { email: email.toLowerCase() },
         { $unset: { resetPasswordToken: '', resetPasswordExpires: '' } }
       );
-    } catch (_) {}
+    } catch (_) { }
     return res.status(500).json({ message: 'Failed to send reset email. Please try again.' });
   }
 };

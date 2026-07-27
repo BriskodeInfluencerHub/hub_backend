@@ -1,5 +1,4 @@
 import crypto from 'crypto';
-import mongoose from 'mongoose';
 import User from '../models/User.js';
 import Referral from '../models/Referral.js';
 import Wallet from '../models/Wallet.js';
@@ -67,36 +66,32 @@ export const checkAndRewardReferral = async (userId) => {
 
     if (!isEligible) return;
 
-    // Update referral status to eligible
-    referral.status = 'eligible';
-    await referral.save();
+    // Atomically claim the reward slot — only one process wins this update
+    // (works on standalone MongoDB, no replica set / session needed)
+    const claimedReferral = await Referral.findOneAndUpdate(
+      { _id: referral._id, rewardReleased: false },
+      { $set: { status: 'rewarded', rewardReleased: true, rewardReleasedAt: new Date() } },
+      { new: true }
+    );
 
-    // Release reward — use a session to ensure atomicity
-    const session = await mongoose.startSession();
-    session.startTransaction();
+    // If null, another process already claimed it → idempotent exit
+    if (!claimedReferral) return;
 
     try {
-      // Idempotency double-check inside session
-      const freshReferral = await Referral.findById(referral._id).session(session);
-      if (freshReferral.rewardReleased) {
-        await session.abortTransaction();
-        session.endSession();
-        return;
-      }
-
       // Credit referrer's wallet
-      const referrerWallet = await Wallet.findOne({ user: referral.referrer }).session(session);
+      const referrerWallet = await Wallet.findOne({ user: referral.referrer });
       if (!referrerWallet) {
-        await session.abortTransaction();
-        session.endSession();
+        // Roll back the referral claim if wallet is missing
+        await Referral.findByIdAndUpdate(referral._id, { rewardReleased: false, status: 'eligible' });
+        console.error('Referral reward aborted — referrer wallet not found');
         return;
       }
 
       referrerWallet.balance += REWARD_AMOUNT;
-      await referrerWallet.save({ session });
+      await referrerWallet.save();
 
       // Create wallet transaction
-      await Transaction.create([{
+      await Transaction.create({
         wallet: referrerWallet._id,
         amount: REWARD_AMOUNT,
         type: 'credit',
@@ -104,25 +99,15 @@ export const checkAndRewardReferral = async (userId) => {
         status: 'completed',
         source: 'referral',
         referralId: referral._id,
-      }], { session });
-
-      // Update referral record
-      freshReferral.rewardReleased = true;
-      freshReferral.rewardReleasedAt = new Date();
-      freshReferral.status = 'rewarded';
-      await freshReferral.save({ session });
+      });
 
       // Update referrer user stats
       await User.findByIdAndUpdate(
         referral.referrer,
-        { $inc: { totalReferrals: 1, referralEarnings: REWARD_AMOUNT } },
-        { session }
+        { $inc: { totalReferrals: 1, referralEarnings: REWARD_AMOUNT } }
       );
 
-      await session.commitTransaction();
-      session.endSession();
-
-      // Send notification to referrer (outside session — non-critical)
+      // Send notification to referrer (non-critical)
       await Notification.create({
         recipient: referral.referrer,
         type: 'referral_rewarded',
@@ -130,10 +115,12 @@ export const checkAndRewardReferral = async (userId) => {
         message: `₹${REWARD_AMOUNT} has been credited to your wallet because ${user.name} completed their profile using your referral.`,
         data: { referralId: referral._id, amount: REWARD_AMOUNT },
       });
+
+      console.log(`[REFERRAL] ✅ Reward of ₹${REWARD_AMOUNT} released for referral ${referral._id}`);
     } catch (err) {
-      await session.abortTransaction();
-      session.endSession();
-      console.error('Referral reward transaction failed:', err.message);
+      // Roll back the atomic claim so it can be retried
+      await Referral.findByIdAndUpdate(referral._id, { rewardReleased: false, rewardReleasedAt: null, status: 'eligible' });
+      console.error('Referral reward post-processing failed:', err.message);
     }
   } catch (err) {
     console.error('checkAndRewardReferral error:', err.message);
@@ -231,6 +218,36 @@ export const releaseReferralReward = async (req, res) => {
     const { userId } = req.params;
     await checkAndRewardReferral(userId);
     res.json({ message: 'Referral reward check completed' });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
+// POST /api/referrals/retry-pending  (Admin — retry all stuck eligible referrals)
+// ─────────────────────────────────────────────────────────────────────────────
+export const retryPendingReferrals = async (req, res) => {
+  try {
+    // Find all referrals that are stuck at 'eligible' (reward not yet released)
+    const stuckReferrals = await Referral.find({
+      status: 'eligible',
+      rewardReleased: false,
+    });
+
+    const results = [];
+    for (const ref of stuckReferrals) {
+      try {
+        await checkAndRewardReferral(ref.referredUser.toString());
+        results.push({ referralId: ref._id, status: 'processed' });
+      } catch (e) {
+        results.push({ referralId: ref._id, status: 'error', error: e.message });
+      }
+    }
+
+    res.json({
+      message: `Processed ${stuckReferrals.length} stuck referral(s)`,
+      results,
+    });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
