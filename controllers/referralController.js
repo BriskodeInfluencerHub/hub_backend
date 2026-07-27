@@ -156,17 +156,40 @@ export const getMyReferral = async (req, res) => {
     const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
     const referralLink = `${frontendUrl}/register?ref=${user.referralCode}`;
 
-    const referrals = await Referral.find({ referrer: req.user._id })
+    const rawReferrals = await Referral.find({ referrer: req.user._id })
       .populate('referredUser', 'name email role createdAt')
       .sort({ createdAt: -1 });
 
-    const totalInDb = await Referral.countDocuments();
-    console.log(`\n[GET MY REFERRAL DEBUG] User ID: ${req.user._id} (${user.email}) | Code: ${user.referralCode}`);
-    console.log(`[GET MY REFERRAL DEBUG] Found ${referrals.length} referrals for this user. (Total referrals in entire DB: ${totalInDb})`);
+    // Clean up / filter out orphaned referrals (where referredUser no longer exists in DB)
+    const referrals = [];
+    const orphanedIds = [];
+
+    for (const r of rawReferrals) {
+      if (!r.referredUser) {
+        orphanedIds.push(r._id);
+      } else {
+        referrals.push(r);
+      }
+    }
+
+    if (orphanedIds.length > 0) {
+      await Referral.deleteMany({ _id: { $in: orphanedIds } });
+    }
 
     const totalReferrals = referrals.length;
     const pendingReferrals = referrals.filter(r => r.status !== 'rewarded').length;
     const completedReferrals = referrals.filter(r => r.status === 'rewarded').length;
+
+    // Sync user referral stats with valid database referrals
+    const actualEarnings = referrals
+      .filter(r => r.status === 'rewarded')
+      .reduce((sum, r) => sum + (r.rewardAmount || 0), 0);
+
+    if (user.referralEarnings !== actualEarnings || user.totalReferrals !== totalReferrals) {
+      user.referralEarnings = actualEarnings;
+      user.totalReferrals = totalReferrals;
+      await user.save({ validateBeforeSave: false });
+    }
 
     res.json({
       referralCode: user.referralCode,
@@ -188,9 +211,11 @@ export const getMyReferral = async (req, res) => {
 // ─────────────────────────────────────────────────────────────────────────────
 export const getReferralHistory = async (req, res) => {
   try {
-    const referrals = await Referral.find({ referrer: req.user._id })
+    const rawReferrals = await Referral.find({ referrer: req.user._id })
       .populate('referredUser', 'name email role createdAt profileImage')
       .sort({ createdAt: -1 });
+
+    const referrals = rawReferrals.filter(r => r.referredUser != null);
 
     res.json({ referrals });
   } catch (error) {
@@ -216,10 +241,12 @@ export const releaseReferralReward = async (req, res) => {
 // ─────────────────────────────────────────────────────────────────────────────
 export const getAdminReferrals = async (req, res) => {
   try {
-    const allReferrals = await Referral.find()
+    const rawReferrals = await Referral.find()
       .populate('referrer', 'name email role')
       .populate('referredUser', 'name email role createdAt')
       .sort({ createdAt: -1 });
+
+    const allReferrals = rawReferrals.filter(r => r.referrer != null && r.referredUser != null);
 
     const totalReferrals = allReferrals.length;
     const totalPayouts = allReferrals
