@@ -6,18 +6,21 @@ export const createCampaign = async (req, res) => {
   const { title, description, category, budget, targetAudience, location, requiredFollowers, requiredPlatforms, startDate, endDate, isDraft } = req.body;
 
   try {
+    const parsedStartDate = startDate && !isNaN(Date.parse(startDate)) ? new Date(startDate) : new Date();
+    const parsedEndDate = endDate && !isNaN(Date.parse(endDate)) ? new Date(endDate) : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+
     const campaign = await Campaign.create({
       brand: req.user._id,
       title,
       description,
       category,
       budget,
-      targetAudience,
-      location,
-      requiredFollowers: requiredFollowers || 0,
-      requiredPlatforms: requiredPlatforms || [],
-      startDate: new Date(startDate),
-      endDate: new Date(endDate),
+      targetAudience: targetAudience || '',
+      location: location || '',
+      requiredFollowers: Number(requiredFollowers) || 0,
+      requiredPlatforms: requiredPlatforms || ['instagram'],
+      startDate: parsedStartDate,
+      endDate: parsedEndDate,
       status: isDraft ? 'draft' : 'pending_approval',
     });
 

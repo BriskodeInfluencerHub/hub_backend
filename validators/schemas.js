@@ -81,13 +81,21 @@ export const campaignSchema = z.object({
   title: z.string().min(3, 'Title must be at least 3 characters'),
   description: z.string().min(10, 'Description must be at least 10 characters'),
   category: z.string().min(1, 'Category is required'),
-  budget: z.number().positive('Budget must be greater than 0'),
-  targetAudience: z.string().optional(),
-  location: z.string().optional(),
+  budget: z.number({ invalid_type_error: 'Budget must be a valid number' }).positive('Budget must be greater than 0'),
+  targetAudience: z.string().optional().or(z.literal('')),
+  location: z.string().optional().or(z.literal('')),
   requiredFollowers: z.number().nonnegative().optional(),
   requiredPlatforms: z.array(z.string()).optional(),
-  startDate: z.string().refine((val) => !isNaN(Date.parse(val)), { message: 'Invalid start date' }),
-  endDate: z.string().refine((val) => !isNaN(Date.parse(val)), { message: 'Invalid end date' }),
+  startDate: z
+    .string()
+    .optional()
+    .or(z.literal(''))
+    .refine((val) => !val || !isNaN(Date.parse(val)), { message: 'Invalid start date' }),
+  endDate: z
+    .string()
+    .optional()
+    .or(z.literal(''))
+    .refine((val) => !val || !isNaN(Date.parse(val)), { message: 'Invalid end date' }),
 });
 
 export const applicationSchema = z.object({
@@ -112,8 +120,9 @@ export const validate = (schema) => (req, res, next) => {
     req.body = schema.parse(req.body);
     next();
   } catch (error) {
+    const details = error.errors.map((err) => `${err.path.join('.') || 'field'}: ${err.message}`).join('; ');
     return res.status(400).json({
-      message: 'Validation failed',
+      message: `Validation failed: ${details}`,
       errors: error.errors.map((err) => ({
         field: err.path.join('.'),
         message: err.message,

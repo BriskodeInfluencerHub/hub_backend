@@ -48,7 +48,7 @@ export const getAdminAnalytics = async (req, res) => {
 
 export const getAdminUsers = async (req, res) => {
   try {
-    const users = await User.find().select('-password').sort({ createdAt: -1 });
+    const users = await User.find({ isDeleted: { $ne: true } }).select('-password').sort({ createdAt: -1 });
 
     const result = [];
     for (const user of users) {
@@ -228,11 +228,12 @@ export const deleteUser = async (req, res) => {
   try {
     const user = await User.findById(userId);
     if (!user) return res.status(404).json({ message: 'User not found' });
-    if (user.role === 'influencer') await Influencer.deleteOne({ user: userId });
-    if (user.role === 'brand') await Brand.deleteOne({ user: userId });
-    if (user.role === 'agency') await Agency.deleteOne({ user: userId });
-    await User.findByIdAndDelete(userId);
-    res.json({ message: 'User and associated profile deleted successfully' });
+    user.isDeleted = true;
+    user.status = 'deleted';
+    user.deletedAt = new Date();
+    await user.save({ validateBeforeSave: false });
+
+    res.json({ message: 'User deleted and account closed successfully' });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }

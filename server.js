@@ -1,4 +1,5 @@
 import express from 'express';
+import { execSync } from 'child_process';
 import http from 'http';
 import { Server } from 'socket.io';
 import cors from 'cors';
@@ -120,7 +121,20 @@ app.use(notFound);
 app.use(errorHandler);
 
 const PORT = process.env.PORT || 5002;
+server.on('error', (err) => {
+  if (err.code === 'EADDRINUSE') {
+    console.log(`[PORT BUSY] Port ${PORT} is occupied. Auto-releasing port...`);
+    try {
+      execSync(`lsof -ti:${PORT} | xargs kill -9 2>/dev/null || true`);
+    } catch (_) {}
+    setTimeout(() => {
+      server.listen(PORT);
+    }, 1000);
+  } else {
+    console.error('[SERVER ERROR]', err);
+  }
+});
 server.listen(PORT, () => {
-  console.log(`Server running in ${process.env.NODE_ENV} mode on port ${PORT}`);
+  console.log(`Server running in ${process.env.NODE_ENV || 'development'} mode on port ${PORT}`);
 });
 export { app, io };

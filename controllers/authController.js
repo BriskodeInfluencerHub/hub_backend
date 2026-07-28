@@ -20,8 +20,22 @@ export const registerUser = async (req, res) => {
     const emailExists = await User.findOne({ email });
     const phoneExists = await User.findOne({ phone });
 
-    if (emailExists || phoneExists) {
-      return res.status(400).json({ message: 'User with this email or phone already exists' });
+    if (emailExists) {
+      if (emailExists.isDeleted || emailExists.status === 'deleted') {
+        return res.status(400).json({
+          message: 'This email address was associated with a deleted account and cannot be re-registered.',
+        });
+      }
+      return res.status(400).json({ message: 'User with this email already exists' });
+    }
+
+    if (phoneExists) {
+      if (phoneExists.isDeleted || phoneExists.status === 'deleted') {
+        return res.status(400).json({
+          message: 'This phone number was associated with a deleted account and cannot be re-registered.',
+        });
+      }
+      return res.status(400).json({ message: 'User with this phone number already exists' });
     }
 
     // Validate referral code if provided
@@ -181,6 +195,10 @@ export const loginUser = async (req, res) => {
       return res.status(403).json({ message: 'Account not verified. Please verify OTP first.' });
     }
 
+    if (user.isDeleted || user.status === 'deleted') {
+      return res.status(403).json({ message: 'This account has been deleted. Contact support if you need assistance.' });
+    }
+
     if (user.status === 'suspended') {
       return res.status(403).json({ message: 'Your account is suspended. Contact admin.' });
     }
@@ -325,8 +343,8 @@ export const resetPassword = async (req, res) => {
   if (!token) {
     return res.status(400).json({ message: 'Reset token is missing.' });
   }
-  if (!password || password.length < 8) {
-    return res.status(400).json({ message: 'Password must be at least 8 characters.' });
+  if (!password || password.length < 6) {
+    return res.status(400).json({ message: 'Password must be at least 6 characters.' });
   }
 
   try {

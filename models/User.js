@@ -7,9 +7,11 @@ const userSchema = new mongoose.Schema({
   phone: { type: String, required: true, unique: true, trim: true },
   password: { type: String, required: true },
   role: { type: String, enum: ['influencer', 'brand', 'agency', 'admin', 'coordinator'], required: true },
-  status: { type: String, enum: ['pending', 'active', 'suspended'], default: 'pending' },
+  status: { type: String, enum: ['pending', 'active', 'suspended', 'deleted'], default: 'pending' },
   profileImage: { type: String, default: '' },
   isVerified: { type: Boolean, default: false },
+  isDeleted: { type: Boolean, default: false },
+  deletedAt: { type: Date, default: null },
   otp: {
     code: String,
     expiresAt: Date

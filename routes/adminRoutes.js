@@ -28,6 +28,11 @@ import {
 } from '../controllers/coordinatorController.js';
 import { protect, authorize } from '../middleware/auth.js';
 import { getAdminReferrals, releaseReferralReward } from '../controllers/referralController.js';
+import {
+  getAdminWithdrawals,
+  approveWithdrawal,
+  rejectWithdrawal,
+} from '../controllers/paymentController.js';
 
 const router = express.Router();
 
@@ -58,5 +63,10 @@ router.delete('/coordinators/:id', deleteCoordinator);
 // Referral Management
 router.get('/referrals', getAdminReferrals);
 router.post('/referrals/reward/:userId', releaseReferralReward);
+
+// Withdrawal Management
+router.get('/withdrawals', getAdminWithdrawals);
+router.post('/withdrawals/:id/approve', approveWithdrawal);
+router.post('/withdrawals/:id/reject', rejectWithdrawal);
 
 export default router;
