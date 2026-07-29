@@ -9,7 +9,7 @@ import {
   resetPassword,
 } from '../controllers/authController.js';
 import { protect } from '../middleware/auth.js';
-import { validate, registerSchema, loginSchema, otpVerifySchema } from '../validators/schemas.js';
+import { validate, registerSchema, loginSchema, otpVerifySchema, forgotPasswordSchema, resetPasswordSchema } from '../validators/schemas.js';
 
 const router = express.Router();
 
@@ -20,7 +20,7 @@ router.post('/refresh', refreshAccessToken);
 router.post('/logout', protect, logoutUser);
 
 // Password recovery
-router.post('/forgot-password', forgotPassword);
-router.post('/reset-password/:token', resetPassword);
+router.post('/forgot-password', validate(forgotPasswordSchema), forgotPassword);
+router.post('/reset-password/:token', validate(resetPasswordSchema), resetPassword);
 
 export default router;

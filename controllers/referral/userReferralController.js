@@ -6,9 +6,9 @@ export const getMyReferral = async (req, res) => {
   try {
     let user = await User.findById(req.user._id);
 
-    // Auto-generate referral code for users who registered before the referral system
-    if (!user.referralCode) {
-      user.referralCode = await generateReferralCode();
+    // Auto-generate name-based referral code for users
+    if (!user.referralCode || user.referralCode.startsWith('BRISKODE')) {
+      user.referralCode = await generateReferralCode(user.name);
       await user.save({ validateBeforeSave: false });
     }
 

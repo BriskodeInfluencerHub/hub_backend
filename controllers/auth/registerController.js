@@ -50,8 +50,8 @@ export const registerUser = async (req, res) => {
     const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
     const otpExpires = new Date(Date.now() + 10 * 60 * 1000); // 10 mins
 
-    // Generate a unique referral code for the new user
-    const newUserReferralCode = await generateReferralCode();
+    // Generate a unique referral code for the new user using their name
+    const newUserReferralCode = await generateReferralCode(name);
 
     const user = await User.create({
       name,

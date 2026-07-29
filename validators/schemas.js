@@ -1,22 +1,30 @@
 import { z } from 'zod';
 
 export const registerSchema = z.object({
-  name: z.string().min(2, 'Name must be at least 2 characters'),
-  email: z.string().email('Invalid email address').transform((e) => e.toLowerCase()),
-  phone: z.string().min(10, 'Phone must be at least 10 digits'),
+  name: z.string().trim().min(2, 'Name must be at least 2 characters'),
+  email: z.string().trim().email('Invalid email address').transform((e) => e.toLowerCase().trim()),
+  phone: z.string().trim().min(10, 'Phone must be at least 10 digits'),
   password: z.string().min(6, 'Password must be at least 6 characters'),
   role: z.enum(['influencer', 'brand', 'agency']),
-  referralCode: z.string().optional(),   // ← FIX: allow referralCode through validation
+  referralCode: z.string().optional(),
 });
 
 export const loginSchema = z.object({
-  email: z.string().email('Invalid email address').transform((e) => e.toLowerCase()),
+  email: z.string().trim().email('Invalid email address').transform((e) => e.toLowerCase().trim()),
   password: z.string().min(1, 'Password is required'),
 });
 
 export const otpVerifySchema = z.object({
-  email: z.string().email('Invalid email address').transform((e) => e.toLowerCase()),
-  code: z.string().length(6, 'OTP code must be 6 digits'),
+  email: z.string().trim().email('Invalid email address').transform((e) => e.toLowerCase().trim()),
+  code: z.string().trim().length(6, 'OTP code must be 6 digits'),
+});
+
+export const forgotPasswordSchema = z.object({
+  email: z.string().trim().email('Invalid email address').transform((e) => e.toLowerCase().trim()),
+});
+
+export const resetPasswordSchema = z.object({
+  password: z.string().min(6, 'Password must be at least 6 characters'),
 });
 
 export const profileUpdateSchema = z.object({

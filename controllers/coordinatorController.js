@@ -7,15 +7,35 @@ export const createCoordinator = async (req, res) => {
   try {
     const { name, email, phone, password, assignedRegion } = req.body;
 
-    const existing = await User.findOne({ email });
+    const cleanName = (name || '').trim();
+    const cleanEmail = (email || '').trim().toLowerCase();
+    const cleanPhone = (phone || '').trim();
+
+    if (!cleanName || cleanName.length < 2) {
+      return res.status(400).json({ message: 'Name must be at least 2 characters.' });
+    }
+
+    if (!cleanEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cleanEmail)) {
+      return res.status(400).json({ message: 'Please provide a valid email address.' });
+    }
+
+    if (!cleanPhone) {
+      return res.status(400).json({ message: 'Phone number is required.' });
+    }
+
+    if (!password || password.length < 6) {
+      return res.status(400).json({ message: 'Password must be at least 6 characters.' });
+    }
+
+    const existing = await User.findOne({ email: cleanEmail });
     if (existing) {
       return res.status(400).json({ message: 'A user with this email already exists' });
     }
 
     const user = await User.create({
-      name,
-      email,
-      phone,
+      name: cleanName,
+      email: cleanEmail,
+      phone: cleanPhone,
       password,
       role: 'coordinator',
       status: 'active',
@@ -24,8 +44,8 @@ export const createCoordinator = async (req, res) => {
 
     const coordinator = await Coordinator.create({
       user: user._id,
-      assignedRegion: assignedRegion || '',
-      phone: phone || '',
+      assignedRegion: (assignedRegion || '').trim(),
+      phone: cleanPhone,
     });
 
     await Notification.create({

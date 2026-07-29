@@ -74,6 +74,15 @@ export const updateApplicationStatus = async (req, res) => {
 export const submitDeliverables = async (req, res) => {
   const { instagramPost, youtubeVideo, reelLink, screenshot } = req.body;
 
+  const cleanInsta = (instagramPost || '').trim();
+  const cleanYt = (youtubeVideo || '').trim();
+  const cleanReel = (reelLink || '').trim();
+  const cleanScreenshot = (screenshot || '').trim();
+
+  if (!cleanInsta && !cleanYt && !cleanReel && !cleanScreenshot) {
+    return res.status(400).json({ message: 'At least one deliverable link or screenshot proof is required.' });
+  }
+
   try {
     const application = await Application.findById(req.params.id).populate('campaign');
     if (!application) {
@@ -85,10 +94,10 @@ export const submitDeliverables = async (req, res) => {
     }
 
     application.deliverables = {
-      instagramPost: instagramPost || '',
-      youtubeVideo: youtubeVideo || '',
-      reelLink: reelLink || '',
-      screenshot: screenshot || '',
+      instagramPost: cleanInsta,
+      youtubeVideo: cleanYt,
+      reelLink: cleanReel,
+      screenshot: cleanScreenshot,
     };
     application.status = 'delivered';
     await application.save();

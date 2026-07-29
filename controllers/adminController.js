@@ -178,18 +178,21 @@ export const approveCampaign = async (req, res) => {
     }
     await campaign.save();
 
-    await Notification.create({
-      recipient: campaign.brand._id,
-      sender: req.user._id,
-      type: 'campaign_invite',
-      title: spam ? 'Campaign Marked as Spam' : (approve ? 'Campaign Approved!' : 'Campaign Rejected'),
-      message: spam
-        ? `Your campaign "${campaign.title}" was flagged as spam and has been rejected.`
-        : (approve
-          ? `Your campaign "${campaign.title}" has been approved and is now live for influencer applications.`
-          : `Your campaign "${campaign.title}" was not approved by the admin.`),
-      data: { campaignId: campaign._id },
-    });
+    const brandRecipient = campaign.brand?._id || campaign.brand;
+    if (brandRecipient) {
+      await Notification.create({
+        recipient: brandRecipient,
+        sender: req.user?._id,
+        type: 'campaign_invite',
+        title: spam ? 'Campaign Marked as Spam' : (approve ? 'Campaign Approved!' : 'Campaign Rejected'),
+        message: spam
+          ? `Your campaign "${campaign.title}" was flagged as spam and has been rejected.`
+          : (approve
+            ? `Your campaign "${campaign.title}" has been approved and is now live for influencer applications.`
+            : `Your campaign "${campaign.title}" was not approved by the admin.`),
+        data: { campaignId: campaign._id },
+      });
+    }
 
     res.json({
       message: spam ? 'Campaign rejected as spam' : (approve ? 'Campaign approved and published!' : 'Campaign rejected/cancelled'),

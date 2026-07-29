@@ -14,12 +14,20 @@ const REWARD_AMOUNT = 150;
 // ─────────────────────────────────────────────────────────────────────────────
 // Utility: Generate unique referral code like "BRISKODE7A92"
 // ─────────────────────────────────────────────────────────────────────────────
-export const generateReferralCode = async () => {
+export const generateReferralCode = async (userName) => {
+  let namePrefix = 'USER';
+  if (userName && typeof userName === 'string') {
+    const cleaned = userName.toUpperCase().replace(/[^A-Z0-9]/g, '');
+    if (cleaned.length >= 2) {
+      namePrefix = cleaned.slice(0, 8);
+    }
+  }
+
   let code;
   let exists = true;
   while (exists) {
     const suffix = crypto.randomBytes(3).toString('hex').toUpperCase().slice(0, 4);
-    code = `BRISKODE${suffix}`;
+    code = `${namePrefix}${suffix}`;
     const found = await User.findOne({ referralCode: code });
     exists = !!found;
   }

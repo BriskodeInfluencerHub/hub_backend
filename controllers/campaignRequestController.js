@@ -45,19 +45,36 @@ export const createPublicCampaignRequest = async (req, res) => {
   try {
     const { name, email, phone, companyName, title, description, requirements, location, budget, timeline, categories } = req.body;
 
-    if (!name || !email) {
-      return res.status(400).json({ message: 'Name and email are required' });
+    const cleanName = (name || '').trim();
+    const cleanEmail = (email || '').trim().toLowerCase();
+    const cleanTitle = (title || '').trim();
+    const cleanDescription = (description || '').trim();
+
+    if (!cleanName || cleanName.length < 2) {
+      return res.status(400).json({ message: 'Name must be at least 2 characters.' });
+    }
+
+    if (!cleanEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cleanEmail)) {
+      return res.status(400).json({ message: 'Please provide a valid email address.' });
+    }
+
+    if (!cleanTitle || cleanTitle.length < 3) {
+      return res.status(400).json({ message: 'Campaign title must be at least 3 characters.' });
+    }
+
+    if (!cleanDescription || cleanDescription.length < 10) {
+      return res.status(400).json({ message: 'Campaign description must be at least 10 characters.' });
     }
 
     const campaignRequest = await CampaignRequest.create({
-      brandInfo: { name, email, phone, companyName },
-      title,
-      description,
-      requirements,
-      location,
-      budget: Number(budget) || 0,
-      timeline,
-      categories,
+      brandInfo: { name: cleanName, email: cleanEmail, phone: (phone || '').trim(), companyName: (companyName || '').trim() },
+      title: cleanTitle,
+      description: cleanDescription,
+      requirements: (requirements || '').trim(),
+      location: (location || '').trim(),
+      budget: Math.max(0, Number(budget) || 0),
+      timeline: (timeline || '').trim(),
+      categories: Array.isArray(categories) ? categories : [],
     });
 
     const admins = await User.find({ role: 'admin' }).select('_id');
