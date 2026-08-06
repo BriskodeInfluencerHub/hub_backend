@@ -45,7 +45,8 @@ const influencerSchema = new mongoose.Schema({
   profileCompletion: { type: Number, default: 0 },
   isVerified: { type: Boolean, default: false },
   averageRating: { type: Number, default: 0 },
-  reviewCount: { type: Number, default: 0 }
+  reviewCount: { type: Number, default: 0 },
+  bucketList: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Campaign' }]
 }, { timestamps: true });
 
 const Influencer = mongoose.model('Influencer', influencerSchema);

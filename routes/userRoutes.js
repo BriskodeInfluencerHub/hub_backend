@@ -13,6 +13,8 @@ import { protect } from '../middleware/auth.js';
 import { upload } from '../middleware/upload.js';
 import { validate, profileUpdateSchema } from '../validators/schemas.js';
 
+import { getBucketList, toggleBucketListItem } from '../controllers/influencer/bucketListController.js';
+
 const router = express.Router();
 
 router.get('/influencers', getPublicInfluencers);
@@ -23,5 +25,7 @@ router.post('/upload-avatar', protect, upload.single('profileImage'), uploadAvat
 router.post('/upload-file', protect, upload.single('file'), uploadFile);
 router.get('/notifications', protect, getUserNotifications);
 router.patch('/notifications/read', protect, markNotificationsRead);
+router.get('/bucket-list', protect, getBucketList);
+router.post('/bucket-list/toggle', protect, toggleBucketListItem);
 
 export default router;
