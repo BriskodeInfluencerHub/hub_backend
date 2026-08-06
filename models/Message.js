@@ -8,5 +8,7 @@ const messageSchema = new mongoose.Schema({
   readBy: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }]
 }, { timestamps: true });
 
+messageSchema.index({ chat: 1, createdAt: -1, _id: -1 });
+
 const Message = mongoose.model('Message', messageSchema);
 export default Message;

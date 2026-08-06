@@ -1,5 +1,4 @@
 import express from 'express';
-import { execSync } from 'child_process';
 import http from 'http';
 import { Server } from 'socket.io';
 import cors from 'cors';
@@ -48,19 +47,39 @@ seedCategories();
 const app = express();
 const server = http.createServer(app);
 
+// Reusable CORS configuration
+const envOrigins = (process.env.FRONTEND_URLS || process.env.FRONTEND_URL || '').split(',');
+
+const allowedOrigins = [
+  ...envOrigins,
+  'http://localhost:5173',
+  'http://localhost:5174',
+].filter(Boolean).map((url) => url.trim().replace(/\/+$/, ''));
+
+const corsOptions = {
+  origin: (origin, callback) => {
+    if (!origin) return callback(null, true);
+    const cleanOrigin = origin.replace(/\/+$/, '');
+    if (allowedOrigins.includes(cleanOrigin)) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  credentials: true,
+};
+
 // Socket.io initialization
 const io = new Server(server, {
-  cors: {
-    origin: ['*', 'http://localhost:5173', 'http://localhost:5174', 'https://briskodeinfluencerhub.netlify.app/'],
-    methods: ['GET', 'POST'],
-  },
+  cors: corsOptions,
 });
 
 app.set('socketio', io);
 
 // Security Middlewares
 app.use(helmet({ crossOriginResourcePolicy: { policy: 'cross-origin' } }));
-app.use(cors({ origin: '*' }));
+app.use(cors(corsOptions));
 
 // Rate Limiting
 const limiter = rateLimit({
@@ -103,12 +122,25 @@ io.on('connection', (socket) => {
   console.log(`Socket connected: ${socket.id}`);
 
   socket.on('join_chat', (chatId) => {
-    socket.join(chatId);
-    console.log(`User joined room: ${chatId}`);
+    if (chatId) {
+      const room = chatId.toString();
+      socket.join(room);
+      console.log(`User joined room: ${room}`);
+    }
+  });
+
+  socket.on('leave_chat', (chatId) => {
+    if (chatId) {
+      const room = chatId.toString();
+      socket.leave(room);
+      console.log(`User left room: ${room}`);
+    }
   });
 
   socket.on('typing', (data) => {
-    socket.to(data.chatId).emit('typing', data);
+    if (data && data.chatId) {
+      socket.to(data.chatId.toString()).emit('typing', data);
+    }
   });
 
   socket.on('disconnect', () => {
@@ -121,20 +153,25 @@ app.use(notFound);
 app.use(errorHandler);
 
 const PORT = process.env.PORT || 5002;
+
 server.on('error', (err) => {
   if (err.code === 'EADDRINUSE') {
-    console.log(`[PORT BUSY] Port ${PORT} is occupied. Auto-releasing port...`);
-    try {
-      execSync(`lsof -ti:${PORT} | xargs kill -9 2>/dev/null || true`);
-    } catch (_) {}
-    setTimeout(() => {
-      server.listen(PORT);
-    }, 1000);
+    console.error(`[PORT BUSY] Port ${PORT} is occupied.`);
+    if (process.env.NODE_ENV !== 'production') {
+      console.log('[PORT BUSY] Retrying in 1 second...');
+      setTimeout(() => {
+        server.listen(PORT);
+      }, 1000);
+    } else {
+      process.exit(1);
+    }
   } else {
     console.error('[SERVER ERROR]', err);
   }
 });
+
 server.listen(PORT, () => {
   console.log(`Server running in ${process.env.NODE_ENV || 'development'} mode on port ${PORT}`);
 });
+
 export { app, io };
