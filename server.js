@@ -152,7 +152,7 @@ io.on('connection', (socket) => {
 app.use(notFound);
 app.use(errorHandler);
 
-const PORT = process.env.PORT || 5002;
+const PORT = process.env.PORT || 8550;
 
 server.on('error', (err) => {
   if (err.code === 'EADDRINUSE') {

@@ -7,6 +7,7 @@ import Referral from '../../models/Referral.js';
 import Notification from '../../models/Notification.js';
 import { generateReferralCode, checkAndRewardReferral } from '../referralController.js';
 import { generateAccessToken, generateRefreshToken } from '../../utils/generateToken.js';
+import sendEmail from '../../utils/sendEmail.js';
 
 export const registerUser = async (req, res) => {
   console.log("\n[REFERRAL DEBUG 11 & 12] Backend req.body:", req.body);
@@ -106,12 +107,23 @@ export const registerUser = async (req, res) => {
       console.log(`[REFERRAL DEBUG] ⚠️  No referrer — registration without referral code`);
     }
 
-    console.log(`\n====================================\n[OTP NOTIFICATION] To: ${email}\nYour OTP Verification Code is: ${otpCode}\nValid for 10 minutes.\n====================================\n`);
+    // Send OTP via Email
+    const otpHtml = `
+      <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:24px;border:1px solid #e5e7eb;border-radius:12px;">
+        <h2 style="color:#db2777;margin-top:0;">Email Verification OTP</h2>
+        <p>Hello <strong>${name}</strong>,</p>
+        <p>Your OTP verification code for <strong>Odisha Influencer Market</strong> is:</p>
+        <div style="text-align:center;margin:24px 0;">
+          <span style="font-size:32px;font-weight:800;letter-spacing:6px;color:#7c3aed;background:#f3e8ff;padding:12px 24px;border-radius:8px;display:inline-block;">${otpCode}</span>
+        </div>
+        <p style="font-size:13px;color:#6b7280;">This code is valid for 10 minutes. Do not share it with anyone.</p>
+      </div>
+    `;
+    await sendEmail({ to: user.email, subject: 'Your Verification OTP — Odisha Influencer Market', html: otpHtml }).catch(console.error);
 
     res.status(201).json({
-      message: 'Registration initiated. OTP sent to your email/phone.',
+      message: 'Registration initiated. OTP sent to your email.',
       email: user.email,
-      otpCode: otpCode,
     });
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -128,36 +140,32 @@ export const verifyOtp = async (req, res) => {
       return res.status(404).json({ message: 'User not found' });
     }
 
-    if (user.isVerified) {
-      return res.status(400).json({ message: 'User is already verified' });
-    }
+    if (!user.isVerified) {
+      if (!user.otp || user.otp.code !== code || new Date() > user.otp.expiresAt) {
+        return res.status(400).json({ message: 'Invalid or expired OTP' });
+      }
 
-    if (!user.otp || user.otp.code !== code || new Date() > user.otp.expiresAt) {
-      return res.status(400).json({ message: 'Invalid or expired OTP' });
-    }
+      user.isVerified = true;
+      user.status = 'active';
+      user.otp = undefined;
 
-    user.isVerified = true;
-    user.status = 'active';
-    user.otp = undefined;
-    await user.save();
+      // Advance referral status from 'registered' → 'verified'
+      if (user.referredBy) {
+        await Referral.findOneAndUpdate(
+          { referredUser: user._id, status: 'registered' },
+          { status: 'verified' }
+        );
+        if (user.role === 'coordinator') {
+          checkAndRewardReferral(user._id).catch(console.error);
+        }
+      }
+    }
 
     const accessToken = generateAccessToken(user._id);
     const refreshToken = generateRefreshToken(user._id);
 
     user.refreshToken = refreshToken;
     await user.save();
-
-    // Advance referral status from 'registered' → 'verified'
-    if (user.referredBy) {
-      await Referral.findOneAndUpdate(
-        { referredUser: user._id, status: 'registered' },
-        { status: 'verified' }
-      );
-      // For coordinators, check eligibility immediately since they have no extra requirements
-      if (user.role === 'coordinator') {
-        checkAndRewardReferral(user._id).catch(console.error);
-      }
-    }
 
     res.status(200).json({
       message: 'OTP verified successfully. Account activated.',
