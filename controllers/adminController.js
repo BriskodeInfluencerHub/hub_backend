@@ -5,6 +5,7 @@ import Brand from '../models/Brand.js';
 import Agency from '../models/Agency.js';
 import Payment from '../models/Payment.js';
 import Notification from '../models/Notification.js';
+import sendEmail from '../utils/sendEmail.js';
 
 export const getAdminAnalytics = async (req, res) => {
   try {
@@ -108,22 +109,47 @@ export const updateUserStatus = async (req, res) => {
 
     if (status !== undefined) user.status = status;
     if (isVerified !== undefined) user.isVerified = isVerified;
+
+    if (user.role === 'influencer' && (status === 'active' || isVerified === true)) {
+      user.isApproved = true;
+      user.isActive = true;
+      user.approvalStatus = 'approved';
+      user.paymentStatus = 'verified';
+      user.receiptStatus = 'verified';
+      user.rejectionReason = '';
+    }
+
     await user.save();
 
     if (user.role === 'influencer') {
       const influencer = await Influencer.findOne({ user: userId });
-      if (influencer && isVerified !== undefined) {
-        influencer.isVerified = isVerified;
-        await influencer.save();
+      if (influencer) {
+        if (isVerified !== undefined) {
+          influencer.isVerified = isVerified;
+          await influencer.save();
+        }
 
-        if (isVerified) {
+        if (status === 'active' || isVerified === true) {
           await Notification.create({
             recipient: userId,
             sender: req.user._id,
             type: 'profile_verified',
-            title: 'Profile Verified!',
-            message: 'Your influencer profile has been verified by the admin and is now public. You can apply to campaigns.',
+            title: 'Account Approved!',
+            message: 'Your influencer registration payment receipt has been verified and your account is now active. You can now log in.',
           });
+
+          const approvalHtml = `
+            <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:24px;border:1px solid #e5e7eb;border-radius:12px;">
+              <h2 style="color:#10b981;margin-top:0;">Account Approved!</h2>
+              <p>Hello <strong>${user.name}</strong>,</p>
+              <p>Great news! Your payment receipt has been verified and your influencer account on <strong>Odisha Influencer Market</strong> is now fully active.</p>
+              <p>You can now log in to your account and explore campaigns.</p>
+              <div style="text-align:center;margin:28px 0;">
+                <a href="${process.env.FRONTEND_URL || 'http://localhost:5173'}/login" style="display:inline-block;padding:12px 28px;background:linear-gradient(135deg,#10b981,#059669);color:#fff;text-decoration:none;border-radius:8px;font-weight:700;font-size:15px;">Log In Now</a>
+              </div>
+            </div>
+          `;
+          await sendEmail({ to: user.email, subject: 'Account Approved — Odisha Influencer Market', html: approvalHtml }).catch(console.error);
         }
       }
     }

@@ -24,6 +24,32 @@ const userSchema = new mongoose.Schema({
   referredBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
   totalReferrals: { type: Number, default: 0 },
   referralEarnings: { type: Number, default: 0 },
+  // Influencer Registration Payment & Admin Approval Fields
+  paymentAmount: { type: Number, default: 0 },
+  paymentStatus: {
+    type: String,
+    enum: ['not_required', 'pending', 'receipt_submitted', 'verified', 'rejected'],
+    default: 'not_required',
+  },
+  receiptFilename: { type: String, default: '' },
+  receiptStatus: {
+    type: String,
+    enum: ['not_required', 'not_uploaded', 'submitted', 'verified', 'rejected'],
+    default: 'not_required',
+  },
+  approvalStatus: {
+    type: String,
+    enum: ['not_required', 'pending', 'approved', 'rejected'],
+    default: 'not_required',
+  },
+  isApproved: { type: Boolean, default: true },
+  isActive: { type: Boolean, default: true },
+  rejectionReason: { type: String, default: '' },
+  utrNumber: { type: String, default: '' },
+  paymentToken: { type: String, default: null },
+  paymentTokenExpiry: { type: Date, default: null },
+  reuploadToken: { type: String, default: null },
+  reuploadTokenExpiry: { type: Date, default: null },
 }, { timestamps: true });
 
 userSchema.pre('save', async function (next) {

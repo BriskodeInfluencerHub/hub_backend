@@ -1,3 +1,4 @@
+import crypto from 'crypto';
 import User from '../../models/User.js';
 import Influencer from '../../models/Influencer.js';
 import Brand from '../../models/Brand.js';
@@ -8,6 +9,7 @@ import Notification from '../../models/Notification.js';
 import { generateReferralCode, checkAndRewardReferral } from '../referralController.js';
 import { generateAccessToken, generateRefreshToken } from '../../utils/generateToken.js';
 import sendEmail from '../../utils/sendEmail.js';
+import { getInfluencerRegistrationFee } from '../../config/paymentConfig.js';
 
 export const registerUser = async (req, res) => {
   console.log("\n[REFERRAL DEBUG 11 & 12] Backend req.body:", req.body);
@@ -54,6 +56,16 @@ export const registerUser = async (req, res) => {
     // Generate a unique referral code for the new user using their name
     const newUserReferralCode = await generateReferralCode(name);
 
+    let rawPaymentToken = null;
+    let hashedPaymentToken = null;
+    let paymentTokenExpiry = null;
+
+    if (role === 'influencer') {
+      rawPaymentToken = crypto.randomBytes(32).toString('hex');
+      hashedPaymentToken = crypto.createHash('sha256').update(rawPaymentToken).digest('hex');
+      paymentTokenExpiry = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
+    }
+
     const user = await User.create({
       name,
       email,
@@ -66,7 +78,15 @@ export const registerUser = async (req, res) => {
       otp: {
         code: otpCode,
         expiresAt: otpExpires
-      }
+      },
+      paymentAmount: role === 'influencer' ? getInfluencerRegistrationFee() : 0,
+      paymentStatus: role === 'influencer' ? 'pending' : 'not_required',
+      receiptStatus: role === 'influencer' ? 'not_uploaded' : 'not_required',
+      approvalStatus: role === 'influencer' ? 'pending' : 'not_required',
+      isApproved: role !== 'influencer',
+      isActive: role !== 'influencer',
+      paymentToken: hashedPaymentToken,
+      paymentTokenExpiry: paymentTokenExpiry,
     });
 
     // Self-referral guard
@@ -121,6 +141,16 @@ export const registerUser = async (req, res) => {
     `;
     await sendEmail({ to: user.email, subject: 'Your Verification OTP — Odisha Influencer Market', html: otpHtml }).catch(console.error);
 
+    if (role === 'influencer') {
+      return res.status(201).json({
+        message: 'Registration initiated. Please verify your email to continue.',
+        email: user.email,
+        requiresPayment: true,
+        userId: user._id,
+        paymentToken: rawPaymentToken,
+      });
+    }
+
     res.status(201).json({
       message: 'Registration initiated. OTP sent to your email.',
       email: user.email,
@@ -146,8 +176,25 @@ export const verifyOtp = async (req, res) => {
       }
 
       user.isVerified = true;
-      user.status = 'active';
       user.otp = undefined;
+
+      if (user.role === 'influencer') {
+        // Rotate payment token for fresh 24h window from OTP completion
+        const rawPaymentToken = crypto.randomBytes(32).toString('hex');
+        const hashedPaymentToken = crypto.createHash('sha256').update(rawPaymentToken).digest('hex');
+        user.paymentToken = hashedPaymentToken;
+        user.paymentTokenExpiry = new Date(Date.now() + 24 * 60 * 60 * 1000);
+        await user.save();
+
+        return res.status(200).json({
+          message: 'Email verified. Proceed to payment.',
+          requiresPayment: true,
+          userId: user._id,
+          paymentToken: rawPaymentToken,
+        });
+      }
+
+      user.status = 'active';
 
       // Advance referral status from 'registered' → 'verified'
       if (user.referredBy) {
@@ -159,6 +206,20 @@ export const verifyOtp = async (req, res) => {
           checkAndRewardReferral(user._id).catch(console.error);
         }
       }
+    } else if (user.role === 'influencer') {
+      // Email was already verified, return rotated token if requested
+      const rawPaymentToken = crypto.randomBytes(32).toString('hex');
+      const hashedPaymentToken = crypto.createHash('sha256').update(rawPaymentToken).digest('hex');
+      user.paymentToken = hashedPaymentToken;
+      user.paymentTokenExpiry = new Date(Date.now() + 24 * 60 * 60 * 1000);
+      await user.save();
+
+      return res.status(200).json({
+        message: 'Email verified. Proceed to payment.',
+        requiresPayment: true,
+        userId: user._id,
+        paymentToken: rawPaymentToken,
+      });
     }
 
     const accessToken = generateAccessToken(user._id);
@@ -185,3 +246,4 @@ export const verifyOtp = async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 };
+

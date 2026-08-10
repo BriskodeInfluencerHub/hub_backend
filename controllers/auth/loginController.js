@@ -24,6 +24,23 @@ export const loginUser = async (req, res) => {
       return res.status(403).json({ message: 'Your account is suspended. Contact admin.' });
     }
 
+    if (user.role === 'influencer') {
+      if (!user.isVerified) {
+        return res.status(403).json({ message: 'Please verify your email before continuing.' });
+      }
+      if (user.isApproved !== true || user.isActive !== true) {
+        let msg = 'Your account is awaiting admin approval.';
+        if (user.receiptStatus === 'not_uploaded') {
+          msg = 'Please submit your payment receipt before logging in.';
+        } else if (user.receiptStatus === 'submitted') {
+          msg = 'Your payment receipt is under admin verification.';
+        } else if (user.approvalStatus === 'rejected') {
+          msg = 'Your payment receipt was rejected. Please check your email for a re-upload link.';
+        }
+        return res.status(403).json({ message: msg });
+      }
+    }
+
     const isMatch = await user.matchPassword(password);
     if (!isMatch) {
       return res.status(401).json({ message: 'Invalid email or password' });

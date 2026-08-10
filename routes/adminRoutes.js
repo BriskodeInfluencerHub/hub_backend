@@ -33,6 +33,13 @@ import {
   approveWithdrawal,
   rejectWithdrawal,
 } from '../controllers/paymentController.js';
+import {
+  getInfluencerPayments,
+  getInfluencerPaymentById,
+  serveInfluencerReceipt,
+  approveInfluencerPayment,
+  rejectInfluencerPayment,
+} from '../controllers/influencer/adminInfluencerPaymentsController.js';
 
 const router = express.Router();
 
@@ -68,5 +75,12 @@ router.post('/referrals/reward/:userId', releaseReferralReward);
 router.get('/withdrawals', getAdminWithdrawals);
 router.post('/withdrawals/:id/approve', approveWithdrawal);
 router.post('/withdrawals/:id/reject', rejectWithdrawal);
+
+// Influencer Payments & Approval Management
+router.get('/influencer-payments', getInfluencerPayments);
+router.get('/influencer-payments/:id', getInfluencerPaymentById);
+router.get('/influencer-payments/:id/receipt', serveInfluencerReceipt);
+router.patch('/influencer-payments/:id/approve', approveInfluencerPayment);
+router.patch('/influencer-payments/:id/reject', rejectInfluencerPayment);
 
 export default router;

@@ -22,10 +22,18 @@ import campaignRequestRoutes from './routes/campaignRequestRoutes.js';
 import coordinatorRoutes from './routes/coordinatorRoutes.js';
 import referralRoutes from './routes/referralRoutes.js';
 import agencyRoutes from './routes/agencyRoutes.js';
+import influencerRoutes from './routes/influencerRoutes.js';
 import Category from './models/Category.js';
+import fs from 'fs';
 
 // Load env vars
 dotenv.config();
+
+// Ensure private_uploads/receipts exists
+const privateReceiptsDir = path.join(path.resolve(), 'private_uploads', 'receipts');
+if (!fs.existsSync(privateReceiptsDir)) {
+  fs.mkdirSync(privateReceiptsDir, { recursive: true });
+}
 
 // Connect to Database
 connectDB();
@@ -118,6 +126,7 @@ app.use('/api/campaign-requests', campaignRequestRoutes);
 app.use('/api/coordinator', coordinatorRoutes);
 app.use('/api/referrals', referralRoutes);
 app.use('/api/agency', agencyRoutes);
+app.use('/api/influencers', influencerRoutes);
 
 // Socket connection logic
 io.on('connection', (socket) => {
