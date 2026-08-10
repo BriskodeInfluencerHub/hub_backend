@@ -21,6 +21,7 @@ import adminRoutes from './routes/adminRoutes.js';
 import campaignRequestRoutes from './routes/campaignRequestRoutes.js';
 import coordinatorRoutes from './routes/coordinatorRoutes.js';
 import referralRoutes from './routes/referralRoutes.js';
+import agencyRoutes from './routes/agencyRoutes.js';
 import Category from './models/Category.js';
 
 // Load env vars
@@ -116,6 +117,7 @@ app.use('/api/admin', adminRoutes);
 app.use('/api/campaign-requests', campaignRequestRoutes);
 app.use('/api/coordinator', coordinatorRoutes);
 app.use('/api/referrals', referralRoutes);
+app.use('/api/agency', agencyRoutes);
 
 // Socket connection logic
 io.on('connection', (socket) => {
