@@ -19,7 +19,7 @@ const sanitizeFilename = (name) => {
 export const getInfluencerPayments = async (req, res) => {
   try {
     const { status } = req.query;
-    const query = { role: 'influencer', approvalStatus: { $ne: 'not_required' } };
+    const query = { role: 'influencer', approvalStatus: { $ne: 'not_required' }, isDeleted: { $ne: true } };
 
     if (status && ['pending', 'approved', 'rejected'].includes(status)) {
       query.approvalStatus = status;
@@ -38,7 +38,7 @@ export const getInfluencerPayments = async (req, res) => {
 export const getInfluencerPaymentById = async (req, res) => {
   try {
     const { id } = req.params;
-    const influencer = await User.findOne({ _id: id, role: 'influencer' })
+    const influencer = await User.findOne({ _id: id, role: 'influencer', isDeleted: { $ne: true } })
       .select('name email phone createdAt paymentAmount utrNumber paymentStatus receiptStatus approvalStatus rejectionReason isApproved isActive');
 
     if (!influencer) {

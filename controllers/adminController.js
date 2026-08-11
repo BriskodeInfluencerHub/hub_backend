@@ -9,10 +9,10 @@ import sendEmail from '../utils/sendEmail.js';
 
 export const getAdminAnalytics = async (req, res) => {
   try {
-    const totalUsers = await User.countDocuments();
-    const totalInfluencers = await User.countDocuments({ role: 'influencer' });
-    const totalBrands = await User.countDocuments({ role: 'brand' });
-    const totalAgencies = await User.countDocuments({ role: 'agency' });
+    const totalUsers = await User.countDocuments({ isDeleted: { $ne: true } });
+    const totalInfluencers = await User.countDocuments({ role: 'influencer', isDeleted: { $ne: true } });
+    const totalBrands = await User.countDocuments({ role: 'brand', isDeleted: { $ne: true } });
+    const totalAgencies = await User.countDocuments({ role: 'agency', isDeleted: { $ne: true } });
     const totalCampaigns = await Campaign.countDocuments();
     const activeCampaigns = await Campaign.countDocuments({ status: 'active' });
 
