@@ -180,8 +180,14 @@ export const updateUserStatus = async (req, res) => {
 
 export const getAdminCampaigns = async (req, res) => {
   try {
-    const campaigns = await Campaign.find({ status: 'pending_approval' })
-      .populate('brand', 'name email companyName');
+    const { status } = req.query;
+    const filter = {};
+    if (status && status !== 'all') {
+      filter.status = status;
+    }
+    const campaigns = await Campaign.find(filter)
+      .populate('brand', 'name email companyName')
+      .sort({ createdAt: -1 });
     res.json(campaigns);
   } catch (error) {
     res.status(500).json({ message: error.message });

@@ -1,6 +1,8 @@
+import { getInfluencerRegistrationFee, getUpiId } from '../../config/paymentConfig.js';
+
 export const getPaymentConfig = (req, res) => {
-  const fee = Number(process.env.INFLUENCER_REGISTRATION_FEE) || 1000;
-  const upiId = process.env.UPI_ID;
+  const fee = getInfluencerRegistrationFee();
+  const upiId = getUpiId();
 
   if (!upiId) {
     return res.status(503).json({

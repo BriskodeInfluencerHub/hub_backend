@@ -1,10 +1,16 @@
 import CampaignInfluencer from '../../models/CampaignInfluencer.js';
 import CampaignRequest from '../../models/CampaignRequest.js';
 import Notification from '../../models/Notification.js';
+import User from '../../models/User.js';
+import Influencer from '../../models/Influencer.js';
 
 export const inviteInfluencer = async (req, res) => {
   try {
     const { influencerId } = req.body;
+    if (!influencerId) {
+      return res.status(400).json({ message: 'Influencer ID is required' });
+    }
+
     const campaignRequest = await CampaignRequest.findById(req.params.campaignId);
     if (!campaignRequest) {
       return res.status(404).json({ message: 'Campaign not found' });
@@ -13,9 +19,20 @@ export const inviteInfluencer = async (req, res) => {
       return res.status(403).json({ message: 'You are not the assigned coordinator for this campaign' });
     }
 
+    let targetUserId = influencerId;
+    const userExists = await User.findById(influencerId);
+    if (!userExists) {
+      const infDoc = await Influencer.findById(influencerId);
+      if (infDoc && infDoc.user) {
+        targetUserId = infDoc.user;
+      } else {
+        return res.status(404).json({ message: 'Influencer user account not found' });
+      }
+    }
+
     const existing = await CampaignInfluencer.findOne({
       campaignRequest: req.params.campaignId,
-      influencer: influencerId,
+      influencer: targetUserId,
     });
     if (existing) {
       return res.status(400).json({ message: 'Influencer already invited to this campaign' });
@@ -23,14 +40,14 @@ export const inviteInfluencer = async (req, res) => {
 
     const member = await CampaignInfluencer.create({
       campaignRequest: req.params.campaignId,
-      influencer: influencerId,
+      influencer: targetUserId,
     });
 
     const populated = await CampaignInfluencer.findById(member._id)
       .populate('influencer', 'name email profileImage');
 
     await Notification.create({
-      recipient: influencerId,
+      recipient: targetUserId,
       sender: req.user._id,
       type: 'campaign_invite',
       title: 'Campaign Invitation',
@@ -40,7 +57,7 @@ export const inviteInfluencer = async (req, res) => {
 
     const io = req.app.get('socketio');
     if (io) {
-      io.to(influencerId.toString()).emit('campaign_invitation', { campaignRequest });
+      io.to(targetUserId.toString()).emit('campaign_invitation', { campaignRequest });
     }
 
     res.status(201).json(populated);
@@ -51,10 +68,19 @@ export const inviteInfluencer = async (req, res) => {
 
 export const getMyInvitations = async (req, res) => {
   try {
-    const invitations = await CampaignInfluencer.find({ influencer: req.user._id })
+    const targetIds = [req.user._id];
+    const infProfile = await Influencer.findOne({ user: req.user._id });
+    if (infProfile) {
+      targetIds.push(infProfile._id);
+    }
+
+    const invitations = await CampaignInfluencer.find({ influencer: { $in: targetIds } })
       .populate({
         path: 'campaignRequest',
-        populate: { path: 'assignedCoordinator', select: 'name email' },
+        populate: [
+          { path: 'assignedCoordinator', select: 'name email' },
+          { path: 'brand', select: 'name email profileImage' },
+        ],
       })
       .sort({ createdAt: -1 });
     res.json(invitations);
@@ -70,9 +96,15 @@ export const respondToInvitation = async (req, res) => {
       return res.status(400).json({ message: 'Status must be accepted or rejected' });
     }
 
+    const targetIds = [req.user._id];
+    const infProfile = await Influencer.findOne({ user: req.user._id });
+    if (infProfile) {
+      targetIds.push(infProfile._id);
+    }
+
     const invitation = await CampaignInfluencer.findOne({
       _id: req.params.id,
-      influencer: req.user._id,
+      influencer: { $in: targetIds },
     }).populate('campaignRequest');
 
     if (!invitation) {

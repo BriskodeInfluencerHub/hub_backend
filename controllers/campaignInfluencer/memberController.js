@@ -33,15 +33,24 @@ export const updateInfluencerStatus = async (req, res) => {
 
     const campaignRequest = await CampaignRequest.findById(req.params.campaignId);
 
-    if (status === 'rejected') {
+    if (member.influencer?._id) {
+      const recipientId = member.influencer._id.toString();
       await Notification.create({
         recipient: member.influencer._id,
         sender: req.user._id,
         type: 'campaign_invite',
-        title: 'Campaign Update',
-        message: `Your participation in "${campaignRequest.title}" has been marked as ${status}.`,
-        data: { campaignRequestId: campaignRequest._id },
+        title: 'Campaign Status Update',
+        message: `Your status in campaign "${campaignRequest?.title || 'Campaign'}" has been updated to ${status}.`,
+        data: { campaignRequestId: req.params.campaignId, status },
       });
+
+      const io = req.app.get('socketio');
+      if (io) {
+        io.to(recipientId).emit('campaign_status_update', {
+          campaignId: req.params.campaignId,
+          status,
+        });
+      }
     }
 
     res.json(member);

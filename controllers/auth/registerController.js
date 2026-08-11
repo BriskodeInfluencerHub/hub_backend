@@ -247,3 +247,42 @@ export const verifyOtp = async (req, res) => {
   }
 };
 
+export const resendOtp = async (req, res) => {
+  const { email } = req.body;
+
+  try {
+    const cleanEmail = (email || '').trim().toLowerCase();
+    const user = await User.findOne({ email: cleanEmail });
+
+    if (!user) {
+      return res.status(404).json({ message: 'User with this email not found' });
+    }
+
+    const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
+    const otpExpires = new Date(Date.now() + 10 * 60 * 1000);
+
+    user.otp = {
+      code: otpCode,
+      expiresAt: otpExpires,
+    };
+    await user.save();
+
+    const otpHtml = `
+      <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:24px;border:1px solid #e5e7eb;border-radius:12px;">
+        <h2 style="color:#db2777;margin-top:0;">Email Verification OTP</h2>
+        <p>Hello <strong>${user.name}</strong>,</p>
+        <p>Your new OTP verification code for <strong>Odisha Influencer Market</strong> is:</p>
+        <div style="text-align:center;margin:24px 0;">
+          <span style="font-size:32px;font-weight:800;letter-spacing:6px;color:#7c3aed;background:#f3e8ff;padding:12px 24px;border-radius:8px;display:inline-block;">${otpCode}</span>
+        </div>
+        <p style="font-size:13px;color:#6b7280;">This code is valid for 10 minutes. Do not share it with anyone.</p>
+      </div>
+    `;
+    await sendEmail({ to: user.email, subject: 'Your Verification OTP — Odisha Influencer Market', html: otpHtml }).catch(console.error);
+
+    res.json({ message: 'A new OTP code has been sent to your email.' });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
